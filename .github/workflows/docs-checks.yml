@@ -1,0 +1,31 @@
+name: Docs Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  distribution:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install development validation dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+      - name: Validate portable metadata and local links
+        run: python3 scripts/validate_distribution.py
+      - name: Markdown lint
+        run: npx --yes markdownlint-cli@0.50.0 "**/*.md" --config .markdownlint.json
+      - name: Validate fixture contracts
+        run: ruby tests/validate_fixtures.rb
+      - name: Verify skills CLI discovery and agent installation
+        run: python3 scripts/smoke_install.py

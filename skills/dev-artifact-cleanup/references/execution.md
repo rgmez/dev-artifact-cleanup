@@ -28,9 +28,9 @@ If any check is unavailable or changed, skip the candidate and report it. Do not
 
 Remove only with `git worktree remove <exact-path>` through an argument-safe tool invocation. The exact path must still be registered as a **secondary** worktree by `git worktree list --porcelain`; the primary checkout is never eligible. Verify submodules and nested Git repositories recursively, and stop if any state cannot be verified. Keep the branch unless its deletion was independently authorized and verified. Do not manually remove a worktree directory.
 
-### Codex-managed worktree
+### Agent-managed worktree
 
-Use its managed archive lifecycle when the task owns it. If ownership is not provable, preserve it.
+Use the host's supported archive lifecycle when the task owns it and that capability is available. If ownership or the lifecycle cannot be verified, preserve it. This exception applies to any agent that manages checkout lifetimes; another host must not bypass it through manual Git removal.
 
 ### Other artifact classes
 

@@ -1,11 +1,18 @@
 ---
 name: dev-artifact-cleanup
 description: Audit local development artifacts and plan safe cleanup for Git repositories, especially Xcode projects. Use to inventory builds, caches, logs, and worktrees before an explicitly authorized removal; do not use as a general disk cleaner.
+license: MIT
+compatibility: Requires local filesystem inspection and Git in a macOS or Linux workspace. Xcode inspection requires macOS and Xcode tools. Execution requires a tool that can safely pass command arguments and check process activity.
+metadata:
+  version: "0.1.0"
+  supported-runtimes: "claude-code, github-copilot, cursor, codex, skills.sh"
 ---
 
 # Development Artifact Cleanup
 
 Produce an evidence-backed cleanup plan without treating developer work as disposable.
+
+This is a portable Agent Skill. Read [agent capabilities](references/agent-capabilities.md) when choosing tools or when the host has limited filesystem access. All references are relative to this installed skill directory. Host-specific UI metadata is optional; the workflow does not require a particular agent or MCP server.
 
 ## Modes and authorization
 
@@ -27,7 +34,7 @@ Never infer authorization to clean a broader directory, delete a branch, change 
 
 Use the audit manifest as a closed list of targets.
 
-Read [execution rules](references/execution.md) before performing an execution request. The manifest's `approved` field must name the exact candidate IDs the user authorized; a broad approval such as “clean everything” does not add new paths to the closed list.
+Read [execution rules](references/execution.md) before performing an execution request. The manifest's `approvedCandidateIds` field must name the exact candidate IDs the user authorized; a broad approval such as “clean everything” does not add new paths to the closed list.
 
 - Reject empty paths, roots, unresolved variables, globs, and symbolic links that point outside the approved target.
 - Recheck the candidate's type, size, ownership, Git state, and active-build status immediately before removal.
@@ -43,6 +50,15 @@ Stop and report instead of deleting when any of these is true:
 - Git state includes tracked or untracked work.
 - Ignored content is not explicitly classified as regenerated output.
 - The integration branch or remote evidence is ambiguous or unavailable.
-- The target is a Codex-managed worktree not clearly owned by the current task.
+- The target is an agent-managed worktree whose ownership or supported lifecycle cannot be verified.
 - An Xcode build, test, or simulator is active, or activity cannot be safely checked.
 - The manifest cannot prove an approved root, resolved path, unique candidate ID, or unchanged snapshot.
+
+## Example requests
+
+- "Audit build artifacts and worktrees in this repository and report cleanup candidates."
+- "Use audit audit-123 and remove only worktree-feature-a after revalidation."
+
+## Version
+
+0.1.0. Git worktree execution and Xcode/Swift artifact audits; installation through skills.sh.

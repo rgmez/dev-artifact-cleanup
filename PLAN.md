@@ -2,7 +2,7 @@
 
 ## Goal
 
-Create a shareable Codex skill that inventories local development artifacts, proposes safe cleanup actions, and executes only explicitly authorized, revalidated removals.
+Create a shareable Agent Skill for Claude Code, GitHub Copilot, Cursor, Codex, and other compatible agents that inventories local development artifacts, proposes safe cleanup actions, and executes only explicitly authorized, revalidated removals.
 
 The skill must reduce disk use without treating local work, ignored files, worktrees, test evidence, or release artifacts as disposable by default.
 
@@ -44,8 +44,9 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 2. **Audit mode** — Implement inventory and classification only; test normal, ambiguous, and safety-stop cases. **Complete:** fixture validation and a real non-destructive audit with no candidates both passed.
 3. **Execution mode** — Add revalidation and narrowly scoped deletion or Git worktree removal for proven candidates. **Complete for v1 contract validation:** closed-list execution, a versioned manifest schema, and fixtures are present. Version 1 limits execution to verified ordinary secondary Git worktrees; generic directory deletion needs a separately reviewed platform adapter.
 4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators. **Documentation complete for v1.** A project-specific Xcode trial remains optional before expanding execution beyond Git worktrees.
-5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **Ready for review:** MIT license, README, independent safety review, official skill validation, no-secrets review, and a real audit trial are complete. Explicit push and public-release approval remain.
-6. **Publication and article** — Make the repository public only after review; write the article from verified behavior and measured examples that contain no private data.
+5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **Public repository available:** the package remains a development version; installation validation does not certify execution behavior in each host.
+6. **Publication and article** — The GitHub repository is public. Versioned releases and an article remain separate deliverables.
+7. **Cross-agent distribution** — Keep one canonical Agent Skills package under `skills/dev-artifact-cleanup`, provide skills.sh installation for Claude Code, Copilot, Cursor, and Codex, and validate discovery, installed resources, and relative links. CI repeats distribution checks with telemetry disabled. Runtime behavior in each host requires separate evaluation.
 
 ## Release gates
 
@@ -60,4 +61,6 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 - License: MIT.
 - Initial scope: Git + Xcode/Swift. Web and Android require separate evidence rules before inclusion.
 - Manifest format: JSON manifest plus Markdown summary.
-- Distribution target: repository source first; package distribution is deferred until the release workflow is validated.
+- Distribution target: public GitHub source installed through the skills CLI (`skills.sh`). No separate npm package or Claude plugin is required for native skills support.
+- Runtime metadata follows the existing public skill repositories: quoted semantic version and a string `supported-runtimes` field, with portable instructions shared by every host.
+- `compatibility` follows the Agent Skills specification. A bundled provider validator that rejects that standard field is not the cross-agent distribution contract; the repository validator and real CLI smoke test cover distribution.
