@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "mode": "audit",
+  "candidates": [
+    {
+      "id": "worktree-local-settings",
+      "path": "/workspace/.worktrees/feature-a",
+      "class": "worktree",
+      "sizeBytes": 1048576,
+      "evidence": [
+        "Git worktree is clean",
+        "Ignored settings.local.json was found"
+      ],
+      "gitState": "clean-with-ambiguous-ignored-content",
+      "ownership": "ordinary-git-worktree",
+      "risk": "requires-review",
+      "proposedAction": "audit-only",
+      "approved": false
+    }
+  ]
+}

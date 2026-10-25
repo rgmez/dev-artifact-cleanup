@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "mode": "audit",
+  "candidates": [
+    {
+      "id": "derived-data-project-a",
+      "path": "/workspace/App/DerivedData",
+      "class": "build-output",
+      "sizeBytes": 536870912,
+      "evidence": [
+        "Configured as the project's dedicated derived data path",
+        "No active build was observed"
+      ],
+      "gitState": "not-applicable",
+      "ownership": "project-dedicated",
+      "risk": "safe-candidate",
+      "proposedAction": "remove",
+      "approved": false
+    }
+  ]
+}

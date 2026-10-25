@@ -21,3 +21,11 @@ Given a clean worktree with a commit that is neither reachable from nor patch-eq
 ## 5. Simulator safety stop
 
 Given a CoreSimulator device directory, the audit should retain it unless the user explicitly identifies the device as disposable and authorizes its deletion through the simulator lifecycle.
+
+## 6. Closed-list execution
+
+Given two safe candidates in an audit manifest and approval for one candidate ID, execution should revalidate and act only on that ID. It must not infer approval for the other candidate or a sibling directory.
+
+## 7. Changed candidate safety stop
+
+Given an approved candidate that becomes a symbolic link, gains untracked Git files, or changes ownership after audit, execution should skip it and report the failed revalidation.

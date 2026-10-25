@@ -27,6 +27,8 @@ Never infer authorization to clean a broader directory, delete a branch, change 
 
 Use the audit manifest as a closed list of targets.
 
+Read [execution rules](references/execution.md) before performing an execution request. The manifest's `approved` field must name the exact candidate IDs the user authorized; a broad approval such as “clean everything” does not add new paths to the closed list.
+
 - Reject empty paths, roots, unresolved variables, globs, and symbolic links that point outside the approved target.
 - Recheck the candidate's type, size, ownership, Git state, and active-build status immediately before removal.
 - Remove ordinary Git worktrees with `git worktree remove <path>`; never replace that lifecycle with manual deletion. Do not use `--force` to bypass pending work.
