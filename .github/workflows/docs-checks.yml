@@ -28,7 +28,7 @@ jobs:
       - name: Validate fixture contracts
         run: ruby tests/validate_fixtures.rb
       - name: Test portable adapter audit and safety gates
-        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+        run: python3 -B -m unittest discover -s tests -p 'test_*.py' -v
       - name: Verify skills CLI discovery and agent installation
         run: python3 scripts/smoke_install.py
   macos-adapter:
@@ -41,4 +41,4 @@ jobs:
       - name: Install development validation dependencies
         run: python3 -m pip install -r requirements-dev.txt
       - name: Test native Xcode cache staging, purge and recovery
-        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+        run: python3 -B -m unittest discover -s tests -p 'test_*.py' -v

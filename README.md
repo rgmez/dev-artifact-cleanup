@@ -75,7 +75,7 @@ The CLI's telemetry is optional. Set `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` i
 python3 -m pip install -r requirements-dev.txt
 python3 scripts/validate_distribution.py
 ruby tests/validate_fixtures.rb
-python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 -B -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 For an isolated CLI discovery/install test:

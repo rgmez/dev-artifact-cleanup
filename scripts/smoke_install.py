@@ -19,6 +19,16 @@ AGENTS = {
 }
 
 
+def package_resources(source: Path):
+    """Exclude generated Python bytecode that the skills installer also omits."""
+    for resource in source.rglob("*"):
+        relative = resource.relative_to(source)
+        if "__pycache__" in relative.parts or resource.suffix in {".pyc", ".pyo"}:
+            continue
+        if resource.is_file():
+            yield resource
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", default=str(ROOT), help="Local repository or GitHub owner/repo")
@@ -57,11 +67,10 @@ def main() -> None:
                 raise RuntimeError(f"Missing installation for {agent}: {entry.relative_to(project)}")
             installed.add(entry)
         for entry in sorted(installed):
-            for resource in source.rglob("*"):
-                if resource.is_file():
-                    copy = entry.parent / resource.relative_to(source)
-                    if not copy.is_file() or copy.read_bytes() != resource.read_bytes():
-                        raise RuntimeError(f"Resource missing or modified: {copy.relative_to(project)}")
+            for resource in package_resources(source):
+                copy = entry.parent / resource.relative_to(source)
+                if not copy.is_file() or copy.read_bytes() != resource.read_bytes():
+                    raise RuntimeError(f"Resource missing or modified: {copy.relative_to(project)}")
         print(f"Discovery and complete payload verified for {', '.join(AGENTS)}")
         print("Temporary project removed; no global installation or agent settings changed")
 
