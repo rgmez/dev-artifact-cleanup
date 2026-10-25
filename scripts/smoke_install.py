@@ -12,10 +12,10 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = "dev-artifact-cleanup"
 AGENTS = {
-    "claude-code": "Claude Code",
-    "github-copilot": "GitHub Copilot",
-    "cursor": "Cursor",
-    "codex": "Codex",
+    "claude-code": ".claude/skills",
+    "github-copilot": ".agents/skills",
+    "cursor": ".agents/skills",
+    "codex": ".agents/skills",
 }
 
 
@@ -40,7 +40,8 @@ def main() -> None:
             cli + ["--skill", SKILL, "--agent", *AGENTS, "--copy", "--yes"],
             cwd=project, env=env, timeout=120, check=True,
         )
-        # Verify both the public agent IDs and the full resource payload installed.
+        # The installer validates the explicit agent IDs. Listing agent names
+        # depends on host detection, so verify the pinned CLI's native paths too.
         listing = subprocess.run(
             ["npx", "--yes", "skills@1.7.4", "list", "--json"],
             cwd=project, env=env, text=True, stdout=subprocess.PIPE,
@@ -49,13 +50,13 @@ def main() -> None:
         records = [entry for entry in json.loads(listing.stdout) if entry["name"] == SKILL]
         if len(records) != 1:
             raise RuntimeError("CLI list must report exactly one installed cleanup skill")
-        for agent, display_name in AGENTS.items():
-            if display_name not in records[0].get("agents", []):
-                raise RuntimeError(f"CLI list did not confirm installation for {agent}")
-        installed = sorted(project.rglob(f"{SKILL}/SKILL.md"))
-        if not installed:
-            raise RuntimeError("No installed SKILL.md found")
-        for entry in installed:
+        installed = set()
+        for agent, directory in AGENTS.items():
+            entry = project / directory / SKILL / "SKILL.md"
+            if not entry.is_file():
+                raise RuntimeError(f"Missing installation for {agent}: {entry.relative_to(project)}")
+            installed.add(entry)
+        for entry in sorted(installed):
             for resource in source.rglob("*"):
                 if resource.is_file():
                     copy = entry.parent / resource.relative_to(source)
