@@ -1,0 +1,3 @@
+interface:
+  display_name: "Development Artifact Cleanup"
+  short_description: "Audit local artifacts and plan safe cleanup"
