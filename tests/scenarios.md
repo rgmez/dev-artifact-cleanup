@@ -29,3 +29,11 @@ Given two safe candidates in an audit manifest and approval for one candidate ID
 ## 7. Changed candidate safety stop
 
 Given an approved candidate that becomes a symbolic link, gains untracked Git files, or changes ownership after audit, execution should skip it and report the failed revalidation.
+
+## 8. Shared DerivedData safety stop
+
+Given a `DerivedData` directory whose workspace metadata is missing or points to another checkout, the audit should classify it as **requires review**. It must not assume that a local-looking path belongs to the requested project.
+
+## 9. Test-evidence retention
+
+Given an `.xcresult` bundle or screenshots used for a release or QA decision, the audit should retain it unless the user supplies a retention decision and explicitly authorizes removal.

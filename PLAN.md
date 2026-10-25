@@ -43,7 +43,7 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 1. **Contract** — Define candidate classes, evidence requirements, authorization boundaries, and a machine-readable audit manifest. **In progress:** initial contract and manifest are present in the skill.
 2. **Audit mode** — Implement inventory and classification only; test normal, ambiguous, and safety-stop cases. **In progress:** audit-only behavior and scenario cases are being defined.
 3. **Execution mode** — Add revalidation and narrowly scoped deletion or Git worktree removal for proven candidates. **In progress:** closed-list execution rules and a versioned manifest schema are present; behavior still needs fixture-based validation.
-4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators.
+4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators. **In progress:** ownership and active-build checks, shared DerivedData safety stops, and test-evidence retention are now documented.
 5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review.
 6. **Publication and article** — Make the repository public only after review; write the article from verified behavior and measured examples that contain no private data.
 
