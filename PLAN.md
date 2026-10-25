@@ -41,10 +41,10 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 ## Delivery phases
 
 1. **Contract** — Define candidate classes, evidence requirements, authorization boundaries, and a machine-readable audit manifest. **Complete for v1.**
-2. **Audit mode** — Implement inventory and classification only; test normal, ambiguous, and safety-stop cases. **Complete for fixture validation; awaiting a real non-destructive trial.**
+2. **Audit mode** — Implement inventory and classification only; test normal, ambiguous, and safety-stop cases. **Complete:** fixture validation and a real non-destructive audit with no candidates both passed.
 3. **Execution mode** — Add revalidation and narrowly scoped deletion or Git worktree removal for proven candidates. **Complete for v1 contract validation:** closed-list execution, a versioned manifest schema, and fixtures are present. Version 1 limits execution to verified ordinary secondary Git worktrees; generic directory deletion needs a separately reviewed platform adapter.
-4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators. **Documentation complete for v1; awaiting a real non-destructive trial.**
-5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **In progress:** MIT license, README, independent safety review, official skill validation, and no-secrets review are complete. A real audit trial and explicit release approval remain.
+4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators. **Documentation complete for v1.** A project-specific Xcode trial remains optional before expanding execution beyond Git worktrees.
+5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **Ready for review:** MIT license, README, independent safety review, official skill validation, no-secrets review, and a real audit trial are complete. Explicit push and public-release approval remain.
 6. **Publication and article** — Make the repository public only after review; write the article from verified behavior and measured examples that contain no private data.
 
 ## Release gates
