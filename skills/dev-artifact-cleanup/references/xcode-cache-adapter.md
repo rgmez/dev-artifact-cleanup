@@ -42,6 +42,8 @@ Present the exact audit ID, candidate IDs, paths, estimated bytes, rebuild cost,
 
 Do not modify the audit to add approvals or manufacture approval from `safe-candidate`. This JSON is a record, not a signature, identity proof, or substitute for the host's permissions. An unattended workflow must explicitly adopt this adapter before using it.
 
+Audit, approval, and recovery JSON records must be objects with unique keys at every nesting level and finite numbers. Ambiguous duplicate keys, non-object records, non-finite values, malformed candidate IDs, and inconsistent candidate class/ownership/Git state are blocked before staging. Approved roots must be an array of exact absolute paths; a matching substring in a string is not an approved root. Execution also requires a known integer size matching the revalidated inventory.
+
 ## Execute one approved ID
 
 ```sh
@@ -64,6 +66,8 @@ Before moving the cache, it creates a private `.cleanup-staging-<random-id>` dir
 | `partial` | Purge began but did not complete. Some entries may already be gone. |
 
 The CLI exits nonzero for blocked, retained, partial, or `reportError` outcomes. Preflight errors may emit only a blocked result on stdout; capture stdout/stderr and exit status as well as any saved output. The result file may be incomplete if writes fail. The immutable journal remains the recovery record; its presence does not prove successful removal. Do not auto-delete staging directories in later cleanup runs.
+
+Execution results and new recovery journals record `approvalSha256`, `authorizedAt`, and `authorizationReference` alongside the audit-file digest and candidate ID. Preserve the exact approval bytes and compare these fields when reviewing the outcome. The digest binds the recorded approval, not the identity or authority of whoever wrote it. Earlier journals may lack these new fields; do not invent missing authorization evidence when recovering them.
 
 ## Restore retained payload
 

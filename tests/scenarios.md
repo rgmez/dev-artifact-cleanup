@@ -51,3 +51,7 @@ Given an eligible dedicated cache and exact approval, exclusive staging precedes
 ## 12. Process inspection unavailable
 
 Given a host that cannot inspect processes, the Xcode audit must report affected candidates as `requires-review`, and execution must stop. A direct command succeeding with different permissions does not establish that a sandboxed child process has the same capability.
+
+## 13. Ambiguous approval safety stop
+
+Given JSON records with duplicate keys, non-finite numbers, or a non-object root, reject them before staging. A hash matching ambiguous bytes is not enough. Candidate class, ownership, Git state, ID syntax, approved-root array, and measured size must agree with the dedicated-cache execution contract. A successful result and its immutable journal must bind the exact approval bytes, timestamp, and reference.

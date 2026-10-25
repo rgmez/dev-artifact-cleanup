@@ -9,9 +9,11 @@ import ctypes
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import plistlib
+import re
 import stat
 import subprocess
 import sys
@@ -279,11 +281,38 @@ def create_output(path):
             raise AdapterError("Output already exists; it will not be overwritten") from error
 
 
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise AdapterError("Duplicate JSON object keys are not allowed")
+        result[key] = value
+    return result
+
+
+def reject_constant(value):
+    raise AdapterError("Non-finite JSON numbers are not allowed")
+
+
+def finite_number(value):
+    number = float(value)
+    if not math.isfinite(number):
+        reject_constant(value)
+    return number
+
+
 def read_json(path):
     path = Path(path)
     with directory(path.parent) as parent:
         contents = read_at(parent, path.name)
-    return json.loads(contents), hashlib.sha256(contents).hexdigest()
+    try:
+        record = json.loads(contents, object_pairs_hook=unique_object,
+                            parse_constant=reject_constant, parse_float=finite_number)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise AdapterError("Metadata is not a valid JSON object") from error
+    if not isinstance(record, dict):
+        raise AdapterError("Metadata must be a JSON object")
+    return record, hashlib.sha256(contents).hexdigest()
 
 
 def purge_contents(descriptor, tree):
@@ -315,11 +344,22 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
     if sys.platform != "darwin":
         raise AdapterError("Xcode cache execution is macOS-only")
     manifest, manifest_digest = read_json(manifest_path)
-    approval, _ = read_json(approval_path)
-    if manifest.get("schemaVersion") != 1 or manifest.get("mode") != "audit" or manifest.get("approvedCandidateIds") != [] or not manifest.get("auditId"):
+    approval, approval_digest = read_json(approval_path)
+    if (type(manifest.get("schemaVersion")) is not int or manifest["schemaVersion"] != 1
+            or manifest.get("mode") != "audit" or manifest.get("approvedCandidateIds") != []
+            or not isinstance(manifest.get("auditId"), str) or not manifest["auditId"].strip()):
         raise AdapterError("Execution requires an unchanged audit-mode manifest")
     candidates = manifest.get("candidates", [])
+    roots = manifest.get("approvedRoots")
+    if not isinstance(candidates, list) or not all(isinstance(item, dict) for item in candidates):
+        raise AdapterError("Manifest candidates must be an array of objects")
+    if (not isinstance(roots, list) or not roots
+            or not all(isinstance(root, str) and root.startswith("/") for root in roots)
+            or len(roots) != len(set(roots))):
+        raise AdapterError("Approved roots must be unique absolute path strings")
     identifiers = [item.get("id") for item in candidates]
+    if not all(isinstance(item, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]*", item) for item in identifiers):
+        raise AdapterError("Candidate IDs must follow the manifest identifier contract")
     if len(identifiers) != len(set(identifiers)) or candidate_id not in identifiers:
         raise AdapterError("Candidate ID must exist exactly once")
     if approval.get("auditId") != manifest.get("auditId") or approval.get("manifestSha256") != manifest_digest:
@@ -338,19 +378,30 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
         raise AdapterError("Authorization must follow the audit and cannot be future-dated") from error
     candidate = candidates[identifiers.index(candidate_id)]
     expected = candidate.get("adapter")
-    if candidate.get("risk") != "safe-candidate" or candidate.get("auditRecommendation") != "eligible-for-execution" or candidate.get("snapshot", {}).get("isSymbolicLink") is not False or not isinstance(expected, dict) or expected.get("name") != ADAPTER:
+    snapshot = candidate.get("snapshot")
+    if (candidate.get("class") != "cache" or candidate.get("ownership") != "project-dedicated"
+            or candidate.get("gitState") != "ignored-untracked" or candidate.get("risk") != "safe-candidate"
+            or candidate.get("auditRecommendation") != "eligible-for-execution"
+            or not isinstance(snapshot, dict) or snapshot.get("isSymbolicLink") is not False
+            or snapshot.get("worktreeRole") != "not-applicable"
+            or type(candidate.get("sizeBytes")) is not int or candidate["sizeBytes"] < 0
+            or not isinstance(expected, dict) or expected.get("name") != ADAPTER):
         raise AdapterError("Candidate is not eligible for this adapter")
+    if any(not isinstance(expected.get(key), str) or not expected[key] for key in ("repositoryPath", "derivedDataPath", "workspacePath", "cacheName")):
+        raise AdapterError("Adapter ownership paths must be nonempty strings")
     repository, derived_data, workspace = map(Path, (expected["repositoryPath"], expected["derivedDataPath"], expected["workspacePath"]))
     target = derived_data / expected["cacheName"]
     if candidate.get("path") != str(target) or candidate.get("resolvedPath") != str(target) or candidate.get("approvedRoot") != str(repository) or str(repository) not in manifest.get("approvedRoots", []):
         raise AdapterError("Candidate path is not the approved dedicated cache")
     check_activity()
-    current, _, tree = inspect_cache(repository, derived_data, workspace, expected["cacheName"])
-    if current != expected:
+    current, size, tree = inspect_cache(repository, derived_data, workspace, expected["cacheName"])
+    if json.dumps(current, sort_keys=True) != json.dumps(expected, sort_keys=True) or size != candidate["sizeBytes"]:
         raise AdapterError("Cache identity, ownership or inventory changed since audit")
     output_fd = create_output(output_path)
     result = {"status": "prepared", "operation": "remove-xcode-cache", "auditId": manifest["auditId"],
-              "candidateId": candidate_id, "manifestSha256": manifest_digest, "path": str(target),
+              "candidateId": candidate_id, "manifestSha256": manifest_digest,
+              "approvalSha256": approval_digest, "authorizedAt": approval["authorizedAt"],
+              "authorizationReference": approval["authorizationReference"], "path": str(target),
               "journalPath": None, "reason": None}
     moved = False
     purge_started = False
@@ -372,7 +423,9 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
             # outcome write must not destroy the metadata needed for restoration.
             journal = {"adapter": current, "payloadIdentity": expected["cacheIdentity"],
                        "auditId": manifest["auditId"], "candidateId": candidate_id,
-                       "manifestSha256": manifest_digest, "createdAt": utc_now()}
+                       "manifestSha256": manifest_digest, "approvalSha256": approval_digest,
+                       "authorizedAt": approval["authorizedAt"], "authorizationReference": approval["authorizationReference"],
+                       "createdAt": utc_now()}
             save_descriptor(journal_fd, journal)
             os.fsync(stage)
             os.fsync(parent)

@@ -63,6 +63,8 @@ The instructions guide the agent's decisions; a manifest or metadata field does 
 
 For Xcode caches, follow the [adapter contract and CLI examples](skills/dev-artifact-cleanup/references/xcode-cache-adapter.md). It requires matching workspace metadata, ignored/untracked contents, unchanged identity/inventory, no Xcode activity, and a separate approval bound to the exact audit-file SHA-256 and candidate IDs. It stages without overwriting and keeps a recovery journal; restoration cannot undo an already purged file. It assumes a quiescent trusted checkout, not adversarial concurrent writers.
 
+Version 0.2.1 rejects ambiguous JSON approvals and inconsistent candidate metadata before staging. Execution results and new journals also bind the exact approval-file digest and authorization reference. These records do not replace human authorization or host permissions.
+
 ## skills.sh discovery
 
 This public GitHub repository is installable by the skills CLI. [skills.sh indexes skills through CLI installation telemetry](https://skills.sh/docs/faq); there is no separate package upload or approval file required. A successful install does not guarantee immediate search or leaderboard visibility.

@@ -4,7 +4,7 @@ description: Audit local development artifacts and plan safe cleanup for Git rep
 license: MIT
 compatibility: Requires local filesystem inspection and Git in a macOS or Linux workspace. The optional Xcode cache adapter requires Python 3.9+; execution and restoration require macOS with exclusive rename support. Execution requires safe command arguments and process inspection.
 metadata:
-  version: "0.2.0"
+  version: "0.2.1"
   supported-runtimes: "claude-code, github-copilot, cursor, codex, skills.sh"
 ---
 
@@ -62,4 +62,4 @@ Stop and report instead of deleting when any of these is true:
 
 ## Version
 
-0.2.0. Git worktree execution, a bounded macOS dedicated-Xcode-cache adapter, and Xcode/Swift artifact audits; installation through skills.sh.
+0.2.1. Git worktree execution, a bounded macOS dedicated-Xcode-cache adapter with strict approval parsing and approval-bound receipts, and Xcode/Swift artifact audits; installation through skills.sh.
