@@ -40,11 +40,11 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 
 ## Delivery phases
 
-1. **Contract** — Define candidate classes, evidence requirements, authorization boundaries, and a machine-readable audit manifest. **In progress:** initial contract and manifest are present in the skill.
-2. **Audit mode** — Implement inventory and classification only; test normal, ambiguous, and safety-stop cases. **In progress:** audit-only behavior and scenario cases are being defined.
-3. **Execution mode** — Add revalidation and narrowly scoped deletion or Git worktree removal for proven candidates. **In progress:** closed-list execution rules, a versioned manifest schema, and fixtures are present. Version 1 limits execution to verified ordinary secondary Git worktrees; generic directory deletion needs a separately reviewed platform adapter.
-4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators. **In progress:** ownership and active-build checks, shared DerivedData safety stops, and test-evidence retention are now documented.
-5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **In progress:** MIT license and pre-release README are present; independent behavior validation and a no-secrets review remain.
+1. **Contract** — Define candidate classes, evidence requirements, authorization boundaries, and a machine-readable audit manifest. **Complete for v1.**
+2. **Audit mode** — Implement inventory and classification only; test normal, ambiguous, and safety-stop cases. **Complete for fixture validation; awaiting a real non-destructive trial.**
+3. **Execution mode** — Add revalidation and narrowly scoped deletion or Git worktree removal for proven candidates. **Complete for v1 contract validation:** closed-list execution, a versioned manifest schema, and fixtures are present. Version 1 limits execution to verified ordinary secondary Git worktrees; generic directory deletion needs a separately reviewed platform adapter.
+4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators. **Documentation complete for v1; awaiting a real non-destructive trial.**
+5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **In progress:** MIT license, README, independent safety review, official skill validation, and no-secrets review are complete. A real audit trial and explicit release approval remain.
 6. **Publication and article** — Make the repository public only after review; write the article from verified behavior and measured examples that contain no private data.
 
 ## Release gates
