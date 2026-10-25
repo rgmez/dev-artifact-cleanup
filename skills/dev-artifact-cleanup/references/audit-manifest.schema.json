@@ -44,7 +44,7 @@
           "resolvedPath": { "type": "string", "pattern": "^/" },
           "approvedRoot": { "type": "string", "pattern": "^/" },
           "class": { "enum": ["build-output", "test-result", "worktree", "cache", "archive", "simulator", "log", "other"] },
-          "sizeBytes": { "type": "integer", "minimum": 0 },
+          "sizeBytes": { "type": ["integer", "null"], "minimum": 0 },
           "evidence": { "type": "array", "minItems": 1, "items": { "type": "string" } },
           "gitState": { "type": "string" },
           "ownership": { "type": "string" },
@@ -55,7 +55,7 @@
             "required": ["observedAt", "isSymbolicLink"],
             "properties": {
               "observedAt": { "type": "string", "format": "date-time" },
-              "isSymbolicLink": { "const": false },
+              "isSymbolicLink": { "type": "boolean" },
               "worktreeRole": { "enum": ["primary", "secondary", "not-applicable"] },
               "headOid": { "type": "string" },
               "branchTipOid": { "type": "string" },
@@ -63,7 +63,8 @@
               "hasNestedGitRepository": { "type": "boolean" }
             },
             "additionalProperties": false
-          }
+          },
+          "adapter": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/xcodeAdapter" }] }
         },
         "additionalProperties": false
       }
@@ -79,6 +80,29 @@
       "then": { "required": ["execution"], "properties": { "approvedCandidateIds": { "minItems": 1 } } }
     }
   ],
+  "$defs": {
+    "identity": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "xcodeAdapter": {
+      "type": "object",
+      "required": ["name", "repositoryPath", "derivedDataPath", "workspacePath", "cacheName", "cacheIdentity", "derivedDataIdentity", "treeFingerprint", "infoPlistSha256", "entryCount"],
+      "properties": {
+        "name": { "const": "xcode-dedicated-cache-v1" },
+        "repositoryPath": { "type": "string", "pattern": "^/" },
+        "derivedDataPath": { "type": "string", "pattern": "^/" },
+        "workspacePath": { "type": "string", "pattern": "^/" },
+        "cacheName": { "enum": ["Index.noindex", "CompilationCache.noindex", "ModuleCache.noindex", "SDKStatCaches.noindex"] },
+        "cacheIdentity": { "$ref": "#/$defs/identity" },
+        "derivedDataIdentity": { "$ref": "#/$defs/identity" },
+        "treeFingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "infoPlistSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "entryCount": { "type": "integer", "minimum": 0, "maximum": 100000 }
+      },
+      "additionalProperties": false
+    }
+  },
   "additionalProperties": false,
   "x-uniqueBy": "candidates.id"
 }

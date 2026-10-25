@@ -50,7 +50,7 @@ FIXTURES.each do |fixture|
     approved.each do |id|
       candidate = manifest.fetch("candidates").find { |entry| entry["id"] == id }
       abort("#{fixture}: approved candidate missing") unless candidate
-      abort("#{fixture}: only worktrees execute in v1") unless candidate["class"] == "worktree"
+      abort("#{fixture}: only worktrees use execute-mode fixtures; cache approval is separate") unless candidate["class"] == "worktree"
       abort("#{fixture}: only secondary worktrees execute") unless candidate.fetch("snapshot")["worktreeRole"] == "secondary"
       abort("#{fixture}: candidate not eligible") unless candidate["risk"] == "safe-candidate" && candidate["auditRecommendation"] == "eligible-for-execution"
     end

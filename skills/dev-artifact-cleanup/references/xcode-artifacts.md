@@ -11,17 +11,23 @@ Check whether Xcode, `xcodebuild`, or a test process is using the target. If act
 ## Usually audit as project-dedicated build output
 
 - A custom `-derivedDataPath` or project-local DerivedData directory whose workspace metadata matches the approved checkout.
-- Build products, indexes, module caches, and resolved packages inside that dedicated directory.
+- Build products, indexes, module caches, and resolved packages inside that dedicated directory can be inventoried separately; this classification is not blanket permission to remove them.
 - Test output is retained by default. It becomes a cleanup candidate only after a documented retention decision and explicit approval for that exact candidate.
 
 Confirm no build or test is active first. Removing these directories can require a rebuild and dependency resolution.
+
+## Narrow execution adapter
+
+The [bundled adapter](xcode-cache-adapter.md) executes only `Index.noindex`, `CompilationCache.noindex`, `ModuleCache.noindex`, or `SDKStatCaches.noindex` directly inside dedicated DerivedData in the primary checkout. It requires matching `WorkspacePath` metadata, physical paths, ignored/untracked contents, an unchanged inventory, no active Xcode processes, and a separate exact approval. Execution and restoration require macOS; metadata-only audit can run on Linux against accessible fixtures or checkout data.
+
+It never removes the DerivedData root, `Build`, `SourcePackages`, logs, test evidence, archives, dSYMs, simulators, or shared caches. Evidence inside an allowlisted cache blocks that candidate. Names and age alone are never enough.
 
 ## Require review
 
 - Global `~/Library/Developer/Xcode/DerivedData` and module caches: these can be shared by unrelated projects.
 - `.xcresult` bundles, `.xcarchive` bundles, dSYMs, exported screenshots, and diagnostic logs: they may be release, compliance, or QA evidence.
 - XcodeBuildMCP workspaces: verify a concrete checkout association.
-- `SourcePackages` outside a dedicated build directory: dependency caches may be shared or intentionally pinned.
+- `SourcePackages`, including project-local copies: dependency caches may be shared or intentionally pinned; they remain audit-only.
 - `DerivedData` directories whose workspace relationship cannot be established.
 
 ## Retain unless explicitly authorized

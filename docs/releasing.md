@@ -3,10 +3,12 @@
 ## Verify the package
 
 1. Review the current diff and ensure no personal paths, credentials, private logs, or customer data are shipped.
-2. Run `python3 scripts/validate_distribution.py` and `ruby tests/validate_fixtures.rb`.
+2. Run `python3 scripts/validate_distribution.py`, `ruby tests/validate_fixtures.rb`, and `python3 -m unittest discover -s tests -p 'test_*.py' -v`. Native Xcode execution/recovery must pass on macOS; Linux skips only native tests, not missing modules or dependencies.
 3. Run `python3 scripts/smoke_install.py` to check the local package with the pinned skills CLI. This installs only in a temporary project with telemetry disabled.
 4. Update the version in `SKILL.md` metadata and its Version section together when preparing a versioned release. Do not claim a Git tag or GitHub Release until it exists.
 5. Check the Docs Checks workflow after pushing to the already authorized public repository.
+
+Pinned installations/automations do not adopt a new adapter just because the public package changes. Review their policy, report validation, manifest contract, and installation hashes separately before adoption. Never silently replace a pinned package or expand destructive permissions.
 
 ## Verify public discovery
 

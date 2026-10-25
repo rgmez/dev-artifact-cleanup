@@ -27,5 +27,18 @@ jobs:
         run: npx --yes markdownlint-cli@0.50.0 "**/*.md" --config .markdownlint.json
       - name: Validate fixture contracts
         run: ruby tests/validate_fixtures.rb
+      - name: Test portable adapter audit and safety gates
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Verify skills CLI discovery and agent installation
         run: python3 scripts/smoke_install.py
+  macos-adapter:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install development validation dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+      - name: Test native Xcode cache staging, purge and recovery
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v

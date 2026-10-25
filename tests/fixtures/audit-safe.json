@@ -15,12 +15,13 @@
       "sizeBytes": 536870912,
       "evidence": [
         "Configured as the project's dedicated derived data path",
-        "No active build was observed"
+        "No active build was observed",
+        "The DerivedData root is audit-only; the cache adapter does not remove roots"
       ],
       "gitState": "not-applicable",
       "ownership": "project-dedicated",
       "risk": "safe-candidate",
-      "auditRecommendation": "eligible-for-execution",
+      "auditRecommendation": "requires-review",
       "snapshot": {
         "observedAt": "2026-10-25T09:00:00Z",
         "isSymbolicLink": false,

@@ -31,22 +31,22 @@ The `rgmez/dev-artifact-cleanup@dev-artifact-cleanup` source syntax is also supp
 | Codex | `codex` | `$dev-artifact-cleanup Audit this repository.` |
 | Other agents | Select in the CLI | Use the installed skill through the agent's normal skill discovery. |
 
-All agents receive the same directory under `skills/dev-artifact-cleanup/`, including its references, schema, and license. The optional `agents/openai.yaml` only adds Codex UI metadata. There is no dependency on Codex-specific tools, plugins, or a separate Claude plugin manifest.
+All agents receive the same directory under `skills/dev-artifact-cleanup/`, including references, schema, bundled scripts, and license. The optional `agents/openai.yaml` only adds Codex UI metadata. There is no dependency on Codex-specific tools, plugins, or a separate Claude plugin manifest.
 
 For a manual project install, copy that entire directory into a location recognized by your agent, for example `.claude/skills/dev-artifact-cleanup/` for Claude Code or `.github/skills/dev-artifact-cleanup/` for Copilot. Copying only `SKILL.md` omits required references. The CLI chooses the supported destination for each agent and is the recommended path.
 
 ## Scope and requirements
 
-Version 1 focuses on Git repositories and Xcode/Swift development environments. Web and Android build artifacts are intentionally deferred until they have their own evidence rules and validation scenarios.
+Version 0.2 focuses on Git repositories and Xcode/Swift development environments. Web and Android build artifacts are deferred until they have their own evidence rules and validation scenarios.
 
-Filesystem and Git inspection require a macOS or Linux workspace. Xcode inspection requires macOS and Xcode tools. A cloud agent can inspect its own checkout but cannot infer access to your development machine. Native Windows path manifests are outside the current scope. See [agent capabilities](skills/dev-artifact-cleanup/references/agent-capabilities.md).
+Filesystem and Git inspection require a macOS or Linux workspace. The optional Xcode adapter needs Python 3.9+ and Git; metadata-only audit is portable, but execution and recovery require macOS. Other Xcode diagnostics need the relevant macOS tools. A cloud agent cannot infer access to your development machine. Native Windows path manifests are outside the scope. See [agent capabilities](skills/dev-artifact-cleanup/references/agent-capabilities.md).
 
 ## Safety model
 
 - Audit is the default; it does not delete, commit, fetch, or modify branches.
 - Execution requires explicit approval for exact manifest candidates and revalidates every target immediately before action.
 - Worktrees use Git lifecycle commands rather than manual deletion.
-- Version 1 executes removal only for eligible ordinary secondary Git worktrees. Build directories, caches, archives, test results, and simulators remain audit-only.
+- Execution supports eligible ordinary secondary Git worktrees, plus four direct dedicated-Xcode-cache directories through a macOS adapter. All other directories, shared caches, archives, test evidence, and simulators remain audit-only.
 - Local branches require separate authorization. Remote branches are never in scope by default.
 
 ## Usage
@@ -61,6 +61,8 @@ After reviewing the report, identify the approved worktree candidates:
 
 The instructions guide the agent's decisions; a manifest or metadata field does not technically enforce tool permissions. The host's sandbox and approval system remain responsible for execution access.
 
+For Xcode caches, follow the [adapter contract and CLI examples](skills/dev-artifact-cleanup/references/xcode-cache-adapter.md). It requires matching workspace metadata, ignored/untracked contents, unchanged identity/inventory, no Xcode activity, and a separate approval bound to the exact audit-file SHA-256 and candidate IDs. It stages without overwriting and keeps a recovery journal; restoration cannot undo an already purged file. It assumes a quiescent trusted checkout, not adversarial concurrent writers.
+
 ## skills.sh discovery
 
 This public GitHub repository is installable by the skills CLI. [skills.sh indexes skills through CLI installation telemetry](https://skills.sh/docs/faq); there is no separate package upload or approval file required. A successful install does not guarantee immediate search or leaderboard visibility.
@@ -73,6 +75,7 @@ The CLI's telemetry is optional. Set `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` i
 python3 -m pip install -r requirements-dev.txt
 python3 scripts/validate_distribution.py
 ruby tests/validate_fixtures.rb
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 For an isolated CLI discovery/install test:
@@ -83,7 +86,7 @@ python3 scripts/smoke_install.py
 
 The smoke test uses `skills@1.7.4` in a temporary project, installs for Claude Code, Copilot, Cursor, and Codex, and verifies the installed package resources. It never installs globally or changes live agent settings. Passing installation checks does not demonstrate full behavioral testing in every agent.
 
-The same checks run in [GitHub Actions](.github/workflows/docs-checks.yml). [Releasing](docs/releasing.md) describes verification and optional versioned releases; [PLAN.md](PLAN.md) tracks scope and remaining validation work.
+The same checks run in [GitHub Actions](.github/workflows/docs-checks.yml), with native adapter tests on macOS. Tests use disposable fixtures, not user projects. They validate implementation behavior under controlled conditions, not every Xcode layout or host. [Releasing](docs/releasing.md) describes verification and optional versioned releases; [PLAN.md](PLAN.md) tracks scope and remaining work.
 
 The skill source is at [skills/dev-artifact-cleanup](skills/dev-artifact-cleanup).
 

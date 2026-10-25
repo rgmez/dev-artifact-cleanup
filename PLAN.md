@@ -29,6 +29,8 @@ dev-artifact-cleanup/
 ├── skills/
 │   └── dev-artifact-cleanup/
 │       ├── SKILL.md
+│       ├── scripts/
+│       │   └── xcode_cache.py
 │       └── references/
 │           ├── git-worktrees.md
 │           └── xcode-artifacts.md
@@ -42,8 +44,8 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 
 1. **Contract** — Define candidate classes, evidence requirements, authorization boundaries, and a machine-readable audit manifest. **Complete for v1.**
 2. **Audit mode** — Implement inventory and classification only; test normal, ambiguous, and safety-stop cases. **Complete:** fixture validation and a real non-destructive audit with no candidates both passed.
-3. **Execution mode** — Add revalidation and narrowly scoped deletion or Git worktree removal for proven candidates. **Complete for v1 contract validation:** closed-list execution, a versioned manifest schema, and fixtures are present. Version 1 limits execution to verified ordinary secondary Git worktrees; generic directory deletion needs a separately reviewed platform adapter.
-4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators. **Documentation complete for v1.** A project-specific Xcode trial remains optional before expanding execution beyond Git worktrees.
+3. **Execution mode** — Closed-list worktree execution and contract fixtures are present. Version 0.2 adds a narrow native Xcode cache adapter; generic directory deletion remains excluded.
+4. **Xcode specialization** — Guidance covers DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, packages, and simulators. Version 0.2 adds audit, explicit hash-bound approval, exclusive staging, bounded purge, and non-overwriting recovery for four dedicated cache children inside a primary checkout. Disposable fixtures exercise native macOS behavior; real-project trials and adoption by pinned automations remain separate. No simulator or shared-cache execution is added.
 5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **Public repository available:** the package remains a development version; installation validation does not certify execution behavior in each host.
 6. **Publication and article** — The GitHub repository is public. Versioned releases and an article remain separate deliverables.
 7. **Cross-agent distribution** — Keep one canonical Agent Skills package under `skills/dev-artifact-cleanup`, provide skills.sh installation for Claude Code, Copilot, Cursor, and Codex, and validate discovery, installed resources, and relative links. CI repeats distribution checks with telemetry disabled. Runtime behavior in each host requires separate evaluation.
@@ -55,6 +57,7 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 - Every destructive path requires explicit authorization and final revalidation.
 - The repository owner, visibility, and license are confirmed.
 - The public README and article claims are supported by actual validation evidence.
+- An Xcode adapter change passes portable audit/schema tests and native macOS execution/recovery tests, including changed paths, links, failed activity checks, output collisions, and partial failures. Keep recovery journals immutable and disclose concurrency/metadata-fingerprint limits.
 
 ## Decisions
 

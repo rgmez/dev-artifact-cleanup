@@ -2,13 +2,13 @@
 
 Execution is a second pass over a reviewed audit. It is not a continuation of discovery.
 
-## Version 1 execution scope
+## Execution scope
 
-Version 1 executes only removal of an eligible **ordinary secondary Git worktree**. Generated directories, caches, archives, test results, and simulators remain audit-only. A generic shell deletion command is not a safe cross-platform removal adapter and is deliberately out of scope.
+Execution supports an eligible **ordinary secondary Git worktree**, or the four dedicated cache directories covered by the macOS-only [Xcode adapter](xcode-cache-adapter.md). Other generated directories, caches, archives, test results, and simulators remain audit-only. Generic shell deletion is deliberately out of scope.
 
 ## Accept only explicit candidates
 
-The user must identify an `auditId` and exact candidate IDs to execute. Record the IDs in `approvedCandidateIds` and state the resulting closed list before mutation. Do not extend it to siblings, parents, matching names, or another repository. Candidate IDs must be unique and must exist in the referenced audit manifest.
+The user must identify an `auditId` and exact candidate IDs to execute. For worktrees, record them in the execution manifest's `approvedCandidateIds`. For Xcode caches, preserve the audit bytes and record a separate approval with their digest, IDs, timestamp, and a reference to the user's authorization. State the closed list before mutation; never add siblings, parents, matching names, or another repository. IDs must be unique and exist in the audit.
 
 ## Revalidate
 
@@ -34,8 +34,10 @@ Use the host's supported archive lifecycle when the task owns it and that capabi
 
 ### Other artifact classes
 
-Report as audit-only. Add execution only through a separately reviewed platform adapter that accepts a resolved directory descriptor or an equivalently race-safe primitive, not through interpolated shell text.
+The [dedicated Xcode cache adapter](xcode-cache-adapter.md) uses descriptor-relative operations, exclusive staging, and an immutable recovery journal. Follow its narrower ownership, path, approval, and activity checks. Failed checks do not authorize a fallback deletion.
+
+Report every other class as audit-only. New adapters require separate review and tests; never add execution through interpolated shell text.
 
 ## Outcome
 
-Measure the same data volume before and after execution. Mark every approved candidate as removed, skipped, or failed, and include the reason for anything not removed. Treat observed free-space variation as a measurement, not a guaranteed reclaim amount.
+Measure the same data volume before and after execution. Mark every approved candidate as removed, skipped, retained, partially removed, or failed, with reasons. A partial purge is not full retention; restoration can only move back what remains. Treat observed free-space variation as a measurement, not a guaranteed reclaim amount.

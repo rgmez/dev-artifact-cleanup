@@ -1,10 +1,12 @@
 # Behavior scenarios
 
-These scenarios validate the skill's decision boundaries without deleting data.
+These scenarios describe decision boundaries. Contract fixtures are non-mutating; native adapter tests remove only synthetic data created in disposable temporary repositories.
 
 ## 1. Dedicated DerivedData audit
 
 Given a repository with a custom DerivedData directory whose workspace metadata points to that repository, no active build, and no retained test evidence, the audit should produce a **safe candidate** with an exact path and rebuild cost. It must not delete the directory in audit mode.
+
+The DerivedData root itself has no execution adapter. Only the four direct cache children supported by the Xcode adapter can become executable after its narrower checks and a separate hash-bound approval.
 
 ## 2. Clean integrated worktree
 
@@ -41,3 +43,11 @@ Given a `DerivedData` directory whose workspace metadata is missing or points to
 ## 10. Test-evidence retention
 
 Given an `.xcresult` bundle or screenshots used for a release or QA decision, the audit should retain it unless the user supplies a retention decision and explicitly authorizes removal.
+
+## 11. Xcode adapter recovery
+
+Given an eligible dedicated cache and exact approval, exclusive staging precedes purge. If process activity starts after staging, retain the payload and journal. Restoration must not replace a cache recreated by a newer build. A partial purge must be reported as partial, not successful removal or complete retention.
+
+## 12. Process inspection unavailable
+
+Given a host that cannot inspect processes, the Xcode audit must report affected candidates as `requires-review`, and execution must stop. A direct command succeeding with different permissions does not establish that a sandboxed child process has the same capability.
