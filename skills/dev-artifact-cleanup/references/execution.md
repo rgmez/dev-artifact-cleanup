@@ -2,34 +2,39 @@
 
 Execution is a second pass over a reviewed audit. It is not a continuation of discovery.
 
+## Version 1 execution scope
+
+Version 1 executes only removal of an eligible **ordinary secondary Git worktree**. Generated directories, caches, archives, test results, and simulators remain audit-only. A generic shell deletion command is not a safe cross-platform removal adapter and is deliberately out of scope.
+
 ## Accept only explicit candidates
 
-The user must identify the audit candidate IDs or exact absolute paths to execute. Translate that approval into a closed list and state the list before mutation. Do not extend it to siblings, parents, matching names, or another repository.
+The user must identify an `auditId` and exact candidate IDs to execute. Record the IDs in `approvedCandidateIds` and state the resulting closed list before mutation. Do not extend it to siblings, parents, matching names, or another repository. Candidate IDs must be unique and must exist in the referenced audit manifest.
 
 ## Revalidate
 
 Immediately before every mutation, confirm:
 
-1. The path still exists and is not a symbolic link escaping the approved root.
-2. Its class, ownership, and reason for eligibility still match the audit.
-3. Its Git state, worktree registration, and integration evidence are unchanged when applicable.
-4. No active build, test, simulator, or other process makes the action unsafe.
+1. The resolved path still equals the audited resolved path and is physically contained by the audited resolved root.
+2. The candidate and its path components contain no symbolic links. Reject the candidate if this cannot be established.
+3. Its class, ownership, and reason for eligibility still match the audit.
+4. Its Git state, secondary-worktree registration, HEAD OID, branch-tip OID, and base OID are unchanged when applicable.
+5. No active build, test, simulator, or other process makes the action unsafe.
 
 If any check is unavailable or changed, skip the candidate and report it. Do not use force options to work around a failed check.
 
 ## Approved actions
 
-### Dedicated generated directory
-
-Remove only the exact directory proven to be regenerated output. Never target a repository root, a shared cache, a dependency directory, or a parent selected only because one child was eligible.
-
 ### Ordinary Git worktree
 
-Remove only with `git worktree remove <exact-path>`. Keep the branch unless its deletion was independently authorized and verified. Do not manually remove a worktree directory.
+Remove only with `git worktree remove <exact-path>` through an argument-safe tool invocation. The exact path must still be registered as a **secondary** worktree by `git worktree list --porcelain`; the primary checkout is never eligible. Verify submodules and nested Git repositories recursively, and stop if any state cannot be verified. Keep the branch unless its deletion was independently authorized and verified. Do not manually remove a worktree directory.
 
 ### Codex-managed worktree
 
 Use its managed archive lifecycle when the task owns it. If ownership is not provable, preserve it.
+
+### Other artifact classes
+
+Report as audit-only. Add execution only through a separately reviewed platform adapter that accepts a resolved directory descriptor or an equivalently race-safe primitive, not through interpolated shell text.
 
 ## Outcome
 

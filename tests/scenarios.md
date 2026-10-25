@@ -8,7 +8,7 @@ Given a repository with a custom DerivedData directory whose workspace metadata 
 
 ## 2. Clean integrated worktree
 
-Given a clean ordinary Git worktree whose branch is integrated into the approved base branch and whose ignored contents are only a known build cache, the audit should recommend `git worktree remove` only after explicit execution authorization. It must state that branch deletion is a separate action.
+Given a clean ordinary **secondary** Git worktree whose branch is integrated into the approved base branch and whose ignored contents are only a known build cache, the audit should mark it `eligible-for-execution`. Only an execution manifest with the exact approved candidate ID may invoke `git worktree remove`. Branch deletion is a separate action.
 
 ## 3. Ignored settings safety stop
 
@@ -30,10 +30,14 @@ Given two safe candidates in an audit manifest and approval for one candidate ID
 
 Given an approved candidate that becomes a symbolic link, gains untracked Git files, or changes ownership after audit, execution should skip it and report the failed revalidation.
 
-## 8. Shared DerivedData safety stop
+## 8. Primary checkout safety stop
+
+Given a path registered as the primary worktree, the audit should classify it as **retain** even when its Git state is clean and integrated.
+
+## 9. Shared DerivedData safety stop
 
 Given a `DerivedData` directory whose workspace metadata is missing or points to another checkout, the audit should classify it as **requires review**. It must not assume that a local-looking path belongs to the requested project.
 
-## 9. Test-evidence retention
+## 10. Test-evidence retention
 
 Given an `.xcresult` bundle or screenshots used for a release or QA decision, the audit should retain it unless the user supplies a retention decision and explicitly authorizes removal.

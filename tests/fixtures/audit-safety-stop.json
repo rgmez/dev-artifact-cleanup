@@ -1,10 +1,16 @@
 {
   "schemaVersion": 1,
+  "auditId": "audit-2026-10-25-stop",
+  "createdAt": "2026-10-25T09:00:00Z",
   "mode": "audit",
+  "approvedRoots": ["/workspace"],
+  "approvedCandidateIds": [],
   "candidates": [
     {
       "id": "worktree-local-settings",
       "path": "/workspace/.worktrees/feature-a",
+      "resolvedPath": "/workspace/.worktrees/feature-a",
+      "approvedRoot": "/workspace",
       "class": "worktree",
       "sizeBytes": 1048576,
       "evidence": [
@@ -14,8 +20,13 @@
       "gitState": "clean-with-ambiguous-ignored-content",
       "ownership": "ordinary-git-worktree",
       "risk": "requires-review",
-      "proposedAction": "audit-only",
-      "approved": false
+      "auditRecommendation": "requires-review",
+      "snapshot": {
+        "observedAt": "2026-10-25T09:00:00Z",
+        "isSymbolicLink": false,
+        "worktreeRole": "secondary",
+        "hasNestedGitRepository": false
+      }
     }
   ]
 }

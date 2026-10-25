@@ -12,7 +12,7 @@ Check whether Xcode, `xcodebuild`, or a test process is using the target. If act
 
 - A custom `-derivedDataPath` or project-local DerivedData directory whose workspace metadata matches the approved checkout.
 - Build products, indexes, module caches, and resolved packages inside that dedicated directory.
-- Test output explicitly generated for the approved task, if no retention requirement applies and it is not the only evidence for a CI, QA, or release decision.
+- Test output is retained by default. It becomes a cleanup candidate only after a documented retention decision and explicit approval for that exact candidate.
 
 Confirm no build or test is active first. Removing these directories can require a rebuild and dependency resolution.
 
@@ -30,3 +30,5 @@ Confirm no build or test is active first. Removing these directories can require
 - Signing material, provisioning profiles, keychains, and app archives intended for distribution.
 
 Do not infer safety from age or from a path containing `build`. Record the artifact's owner, evidence, and recovery cost in the audit manifest.
+
+Never delete a CoreSimulator directory from the filesystem. If a user explicitly identifies a disposable simulator, verify its exact UDID and inactive state, then use the supported simulator lifecycle command rather than directory removal.

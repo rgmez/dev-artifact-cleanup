@@ -2,30 +2,83 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Development artifact cleanup audit manifest",
   "type": "object",
-  "required": ["schemaVersion", "mode", "candidates"],
+  "required": ["schemaVersion", "auditId", "createdAt", "mode", "approvedRoots", "approvedCandidateIds", "candidates"],
   "properties": {
     "schemaVersion": { "const": 1 },
+    "auditId": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
     "mode": { "enum": ["audit", "execute"] },
+    "approvedRoots": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^/" }
+    },
+    "approvedCandidateIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+    },
+    "execution": {
+      "type": "object",
+      "required": ["authorizedAt", "authorizedCandidateIds"],
+      "properties": {
+        "authorizedAt": { "type": "string", "format": "date-time" },
+        "authorizedCandidateIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+        }
+      },
+      "additionalProperties": false
+    },
     "candidates": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "path", "class", "sizeBytes", "evidence", "risk", "proposedAction", "approved"],
+        "required": ["id", "path", "resolvedPath", "approvedRoot", "class", "sizeBytes", "evidence", "risk", "auditRecommendation", "snapshot"],
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
           "path": { "type": "string", "pattern": "^/" },
+          "resolvedPath": { "type": "string", "pattern": "^/" },
+          "approvedRoot": { "type": "string", "pattern": "^/" },
           "class": { "enum": ["build-output", "test-result", "worktree", "cache", "archive", "simulator", "log", "other"] },
           "sizeBytes": { "type": "integer", "minimum": 0 },
           "evidence": { "type": "array", "minItems": 1, "items": { "type": "string" } },
           "gitState": { "type": "string" },
           "ownership": { "type": "string" },
           "risk": { "enum": ["safe-candidate", "requires-review", "retain"] },
-          "proposedAction": { "enum": ["audit-only", "remove", "archive", "preserve"] },
-          "approved": { "type": "boolean" }
+          "auditRecommendation": { "enum": ["eligible-for-execution", "requires-review", "retain"] },
+          "snapshot": {
+            "type": "object",
+            "required": ["observedAt", "isSymbolicLink"],
+            "properties": {
+              "observedAt": { "type": "string", "format": "date-time" },
+              "isSymbolicLink": { "const": false },
+              "worktreeRole": { "enum": ["primary", "secondary", "not-applicable"] },
+              "headOid": { "type": "string" },
+              "branchTipOid": { "type": "string" },
+              "baseOid": { "type": "string" },
+              "hasNestedGitRepository": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
         },
         "additionalProperties": false
       }
     }
   },
-  "additionalProperties": false
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "audit" } } },
+      "then": { "properties": { "approvedCandidateIds": { "maxItems": 0 } }, "not": { "required": ["execution"] } }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "execute" } } },
+      "then": { "required": ["execution"], "properties": { "approvedCandidateIds": { "minItems": 1 } } }
+    }
+  ],
+  "additionalProperties": false,
+  "x-uniqueBy": "candidates.id"
 }

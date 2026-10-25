@@ -42,9 +42,9 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 
 1. **Contract** — Define candidate classes, evidence requirements, authorization boundaries, and a machine-readable audit manifest. **In progress:** initial contract and manifest are present in the skill.
 2. **Audit mode** — Implement inventory and classification only; test normal, ambiguous, and safety-stop cases. **In progress:** audit-only behavior and scenario cases are being defined.
-3. **Execution mode** — Add revalidation and narrowly scoped deletion or Git worktree removal for proven candidates. **In progress:** closed-list execution rules and a versioned manifest schema are present; behavior still needs fixture-based validation.
+3. **Execution mode** — Add revalidation and narrowly scoped deletion or Git worktree removal for proven candidates. **In progress:** closed-list execution rules, a versioned manifest schema, and fixtures are present. Version 1 limits execution to verified ordinary secondary Git worktrees; generic directory deletion needs a separately reviewed platform adapter.
 4. **Xcode specialization** — Add guidance for custom DerivedData, XcodeBuildMCP, `.xcresult`, archives, dSYMs, package caches, and simulators. **In progress:** ownership and active-build checks, shared DerivedData safety stops, and test-evidence retention are now documented.
-5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review.
+5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **In progress:** MIT license and pre-release README are present; independent behavior validation and a no-secrets review remain.
 6. **Publication and article** — Make the repository public only after review; write the article from verified behavior and measured examples that contain no private data.
 
 ## Release gates
@@ -55,9 +55,9 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 - The repository owner, visibility, and license are confirmed.
 - The public README and article claims are supported by actual validation evidence.
 
-## Open decisions
+## Decisions
 
-- License: MIT or Apache-2.0.
-- Whether the first release supports only Git + Xcode or includes generic web/Android artifact guidance.
-- Manifest format: Markdown-only report or JSON plus Markdown summary.
-- Distribution target: repository source only, or an installable Codex skill package as well.
+- License: MIT.
+- Initial scope: Git + Xcode/Swift. Web and Android require separate evidence rules before inclusion.
+- Manifest format: JSON manifest plus Markdown summary.
+- Distribution target: repository source first; package distribution is deferred until the release workflow is validated.

@@ -8,10 +8,13 @@ git -C <repository> worktree list --porcelain
 
 ## Evidence for a removable ordinary worktree
 
-1. Its tracked and untracked state is clean.
+1. It is registered as a secondary worktree, not the repository's primary checkout.
+2. Its tracked and untracked state is clean.
 2. Ignored paths have been inspected and are known regenerated output, not settings, secrets, evidence, or user files.
-3. Its committed work is integrated into the intended base branch. Resolve the base from repository policy, upstream configuration, or the reviewed pull request; do not assume a branch name. When allowed, refresh remote evidence first.
-4. It is not a Codex-managed worktree owned by another task. Preserve unknown managed worktrees.
+3. Every nested repository and submodule is clean, initialized as expected, and has no unverified local state.
+4. Its committed work is integrated into the intended base branch. Resolve the base from repository policy, upstream configuration, or the reviewed pull request; do not assume a branch name. When allowed, refresh remote evidence first.
+5. Its audited HEAD OID, branch-tip OID, and base OID still match during execution.
+6. It is not a Codex-managed worktree owned by another task. Preserve unknown managed worktrees.
 
 An ancestor check proves direct integration. `git cherry -v <base> <branch>` can show patch equivalence after a rebase or cherry-pick, but it is not sufficient evidence for merge-only history or an unknown base. Report those cases for review.
 

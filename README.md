@@ -4,6 +4,10 @@ An audit-first Codex skill for identifying safe cleanup candidates in local deve
 
 It is designed for Git repositories and has dedicated guidance for Xcode artifacts. It inventories build outputs, caches, logs, and worktrees, then separates candidates that can be safely acted on from local work, test evidence, archives, simulators, and ambiguous ignored files.
 
+## Initial scope
+
+Version 1 focuses on Git repositories and Xcode/Swift development environments. Web and Android build artifacts are intentionally deferred until they have their own evidence rules and validation scenarios.
+
 ## Safety model
 
 - Audit is the default; it does not delete, commit, fetch, or modify branches.
@@ -16,3 +20,7 @@ It is designed for Git repositories and has dedicated guidance for Xcode artifac
 This repository is in private pre-release development. The current work and public-release gates are documented in [PLAN.md](PLAN.md).
 
 The skill source is at [skills/dev-artifact-cleanup](skills/dev-artifact-cleanup).
+
+## License
+
+MIT. See [LICENSE](LICENSE).

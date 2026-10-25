@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "auditId": "audit-2026-10-25-worktree",
+  "createdAt": "2026-10-25T09:00:00Z",
+  "mode": "execute",
+  "approvedRoots": ["/workspace"],
+  "approvedCandidateIds": ["worktree-feature-a"],
+  "execution": {
+    "authorizedAt": "2026-10-25T09:05:00Z",
+    "authorizedCandidateIds": ["worktree-feature-a"]
+  },
+  "candidates": [
+    {
+      "id": "worktree-feature-a",
+      "path": "/workspace/.worktrees/feature-a",
+      "resolvedPath": "/workspace/.worktrees/feature-a",
+      "approvedRoot": "/workspace",
+      "class": "worktree",
+      "sizeBytes": 1048576,
+      "evidence": [
+        "Registered as a secondary Git worktree",
+        "Branch patch is integrated into the approved base"
+      ],
+      "gitState": "clean",
+      "ownership": "ordinary-git-worktree",
+      "risk": "safe-candidate",
+      "auditRecommendation": "eligible-for-execution",
+      "snapshot": {
+        "observedAt": "2026-10-25T09:00:00Z",
+        "isSymbolicLink": false,
+        "worktreeRole": "secondary",
+        "headOid": "0123456789abcdef0123456789abcdef01234567",
+        "branchTipOid": "0123456789abcdef0123456789abcdef01234567",
+        "baseOid": "89abcdef0123456789abcdef0123456789abcdef",
+        "hasNestedGitRepository": false
+      }
+    }
+  ]
+}

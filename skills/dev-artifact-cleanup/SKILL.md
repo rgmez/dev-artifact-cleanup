@@ -10,7 +10,7 @@ Produce an evidence-backed cleanup plan without treating developer work as dispo
 ## Modes and authorization
 
 - **Audit (default):** inspect and classify candidates. Do not delete, archive, reset, commit, fetch, or modify branches.
-- **Execute:** act only when the user explicitly authorizes the exact candidate paths or identifiers from an audit. Revalidate every candidate immediately before mutation.
+- **Execute:** version 1 executes only an eligible ordinary Git-worktree removal after explicit authorization of exact manifest IDs. Other artifact classes remain audit-only until a host-specific, path-safe removal adapter exists.
 
 Never infer authorization to clean a broader directory, delete a branch, change a remote, or remove a simulator from an audit request.
 
@@ -31,7 +31,7 @@ Read [execution rules](references/execution.md) before performing an execution r
 
 - Reject empty paths, roots, unresolved variables, globs, and symbolic links that point outside the approved target.
 - Recheck the candidate's type, size, ownership, Git state, and active-build status immediately before removal.
-- Remove ordinary Git worktrees with `git worktree remove <path>`; never replace that lifecycle with manual deletion. Do not use `--force` to bypass pending work.
+- Remove ordinary Git worktrees with `git worktree remove <path>` only after the secondary-worktree registration, resolved path, and Git snapshot still match. Never replace that lifecycle with manual deletion. Do not use `--force` to bypass pending work.
 - Treat local-branch deletion as a separate, explicitly authorized action. Never delete remote branches without explicit authorization.
 - Prefer a project-specific build-output directory only when its configuration proves it is regenerated. Do not remove dependency directories, environments, secrets, user documents, screenshots, archives, or evidence by default.
 - Measure space again and report removed, retained, skipped, and failed candidates separately.
@@ -45,3 +45,4 @@ Stop and report instead of deleting when any of these is true:
 - The integration branch or remote evidence is ambiguous or unavailable.
 - The target is a Codex-managed worktree not clearly owned by the current task.
 - An Xcode build, test, or simulator is active, or activity cannot be safely checked.
+- The manifest cannot prove an approved root, resolved path, unique candidate ID, or unchanged snapshot.
