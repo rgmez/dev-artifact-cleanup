@@ -19,6 +19,11 @@ import xcode_cache
 
 
 class Fixture(unittest.TestCase):
+    cache_relative = Path("DataStore/v5/records/AA/fixture.c-0123456789ABC")
+    # Header-shaped unit data, not a captured real compiler index. The separate
+    # native profile test below exercises actual Clang output.
+    cache_bytes = b"IDXR\x01\x08\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"
+
     def setUp(self):
         previous_umask = os.umask(0o077)
         self.addCleanup(os.umask, previous_umask)
@@ -46,6 +51,17 @@ class Fixture(unittest.TestCase):
     def cache(self):
         return self.derived_data / "Index.noindex"
 
+    @property
+    def cache_file(self):
+        return self.cache / self.cache_relative
+
+    def _remove_fixture_cache(self):
+        self.cache_file.unlink()
+        for path in self.cache_file.parents:
+            if path == self.derived_data:
+                break
+            path.rmdir()
+
     def _git(self, *args):
         environment = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
         environment.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1", GIT_TERMINAL_PROMPT="0")
@@ -57,7 +73,9 @@ class Fixture(unittest.TestCase):
         (self.derived_data / "info.plist").write_bytes(plistlib.dumps({"WorkspacePath": str(self.workspace)}))
         cache = self.derived_data / name
         cache.mkdir()
-        (cache / "cache.pcm").write_bytes(b"PCM fixture")
+        generated = cache / self.cache_relative
+        generated.parent.mkdir(parents=True)
+        generated.write_bytes(self.cache_bytes)
 
     def _audit(self):
         return xcode_cache.audit(self.repository, self.derived_data, self.workspace)
@@ -114,8 +132,7 @@ class AuditTests(Fixture):
         self.assertEqual({Path(c["path"]).name for c in self._audit()["candidates"]}, set(xcode_cache.CACHES))
 
     def test_no_cache_is_a_valid_empty_audit(self):
-        (self.cache / "cache.pcm").unlink()
-        self.cache.rmdir()
+        self._remove_fixture_cache()
         manifest = self._audit()
         self.assertEqual(manifest["candidates"], [])
         self._validate_schema(manifest)
@@ -161,8 +178,7 @@ class AuditTests(Fixture):
             xcode_cache.audit(self.repository, external, self.workspace)
 
     def test_symlink_cache_is_review_only(self):
-        (self.cache / "cache.pcm").unlink()
-        self.cache.rmdir()
+        self._remove_fixture_cache()
         self.cache.symlink_to(self.root, target_is_directory=True)
         candidate = self._requires_review()
         self.assertTrue(candidate["snapshot"]["isSymbolicLink"])
@@ -187,7 +203,7 @@ class AuditTests(Fixture):
                 protected.unlink()
 
     def test_hard_link_is_review_only(self):
-        os.link(self.cache / "cache.pcm", self.root / "copy.pcm")
+        os.link(self.cache_file, self.root / "copy.pcm")
         self._requires_review()
 
     def test_shared_writable_cache_is_review_only(self):
@@ -208,11 +224,11 @@ class AuditTests(Fixture):
             self._requires_review()
 
     def test_nested_unignored_exception_is_review_only(self):
-        (self.repository / ".gitignore").write_text(".derivedData/*\n!.derivedData/Index.noindex/\n.derivedData/Index.noindex/*\n!.derivedData/Index.noindex/cache.pcm\n")
+        (self.repository / ".gitignore").write_text(".derivedData/*\n!.derivedData/Index.noindex/\n.derivedData/Index.noindex/*\n!.derivedData/Index.noindex/DataStore/v5/records/AA/fixture.c-0123456789ABC\n")
         self._requires_review()
 
     def test_tracked_cache_is_review_only(self):
-        self._git("add", "-f", ".derivedData/Index.noindex/cache.pcm")
+        self._git("add", "-f", ".derivedData/Index.noindex/" + self.cache_relative.as_posix())
         self._requires_review()
 
     def test_unknown_activity_is_review_only(self):
@@ -257,7 +273,7 @@ class NativeExecutionTests(Fixture):
 
     def test_changed_cache_is_blocked_before_mutation(self):
         paths = self._approval()
-        (self.cache / "cache.pcm").write_bytes(b"Changed after audit")
+        (self.cache_file).write_bytes(b"Changed after audit")
         with self.assertRaises(xcode_cache.AdapterError):
             self._execute(paths)
         self.assertTrue(self.cache.exists())
@@ -289,10 +305,10 @@ class NativeExecutionTests(Fixture):
         result = self._retained()
         self.assertFalse(self.cache.exists())
         journal = Path(result["journalPath"])
-        self.assertEqual((journal.parent / "payload" / "cache.pcm").read_bytes(), b"PCM fixture")
+        self.assertEqual((journal.parent / "payload" / self.cache_relative).read_bytes(), self.cache_bytes)
         restored = xcode_cache.restore(journal, self.root / "restore.json")
         self.assertEqual(restored["status"], "restored")
-        self.assertEqual((self.cache / "cache.pcm").read_bytes(), b"PCM fixture")
+        self.assertEqual((self.cache_file).read_bytes(), self.cache_bytes)
 
     def test_restore_never_overwrites_recreated_cache(self):
         result = self._retained()
@@ -302,7 +318,7 @@ class NativeExecutionTests(Fixture):
         with self.assertRaises((OSError, xcode_cache.AdapterError)):
             xcode_cache.restore(journal, self.root / "restore.json")
         self.assertEqual((self.cache / "new.pcm").read_bytes(), b"New build")
-        self.assertTrue((journal.parent / "payload" / "cache.pcm").exists())
+        self.assertTrue((journal.parent / "payload" / self.cache_relative).exists())
 
     def test_restore_blocks_changed_workspace_metadata(self):
         result = self._retained()
@@ -326,13 +342,13 @@ class NativeExecutionTests(Fixture):
         self.assertEqual(result["status"], "retained")
         journal = Path(result["journalPath"])
         self.assertEqual((journal.parent / "payload" / "user.bin").read_bytes(), b"Do not purge")
-        self.assertTrue((self.derived_data / "original-preserved" / "cache.pcm").exists())
+        self.assertTrue((self.derived_data / "original-preserved" / self.cache_relative).exists())
 
     def test_partial_failure_is_not_reported_as_success_or_full_retention(self):
         paths = self._approval()
 
         def fail_after_one_file(descriptor, tree):
-            os.unlink("cache.pcm", dir_fd=descriptor)
+            os.unlink(self.cache_relative.as_posix(), dir_fd=descriptor)
             raise xcode_cache.AdapterError("Injected failure after one removal")
 
         with patch.object(xcode_cache, "purge_contents", side_effect=fail_after_one_file):
@@ -341,9 +357,9 @@ class NativeExecutionTests(Fixture):
         self.assertTrue(Path(result["journalPath"]).exists())
 
     def test_nested_cache_can_be_removed(self):
-        subdirectory = self.cache / "v5"
+        subdirectory = self.cache / "DataStore" / "v5" / "records" / "BB"
         subdirectory.mkdir()
-        (subdirectory / "record.pcm").write_bytes(b"Generated fixture")
+        (subdirectory / "extra.c-0123456789ABC").write_bytes(self.cache_bytes)
         self.assertEqual(self._execute(self._approval())["status"], "removed")
 
     def test_immutable_journal_survives_failed_outcome_write(self):
@@ -373,8 +389,8 @@ class NativeExecutionTests(Fixture):
         purge = xcode_cache.purge_contents
 
         def substitute(descriptor, tree):
-            os.unlink("cache.pcm", dir_fd=descriptor)
-            os.symlink(str(outside), "cache.pcm", dir_fd=descriptor)
+            os.unlink(self.cache_relative.as_posix(), dir_fd=descriptor)
+            os.symlink(str(outside), self.cache_relative.as_posix(), dir_fd=descriptor)
             return purge(descriptor, tree)
 
         with patch.object(xcode_cache, "purge_contents", side_effect=substitute):

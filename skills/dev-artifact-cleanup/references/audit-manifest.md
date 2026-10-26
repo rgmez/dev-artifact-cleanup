@@ -16,7 +16,7 @@ For tools that can emit structured data, use [the JSON schema](audit-manifest.sc
 | Risk | Safe candidate, requires review, or retain. |
 | Audit recommendation | `eligible-for-execution`, `requires-review`, or `retain`. It is not an execution command. |
 | Snapshot | Observation time and revalidation facts such as symlink state, worktree role, HEAD, branch tip, and base OID. |
-| Adapter (optional) | Xcode cache identity, ownership paths, metadata hash, bounded inventory fingerprint, and entry count, or `null` if unavailable. |
+| Adapter (optional) | Xcode cache identity, ownership paths, metadata hash, bounded inventory fingerprint, content profile, and entry count, or `null` if unavailable. |
 
 Keep unknown or ambiguous candidates in the report. Do not silently omit them or convert them to safe candidates.
 

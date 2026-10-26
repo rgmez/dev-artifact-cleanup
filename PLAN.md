@@ -51,6 +51,7 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 6. **Publication and article** — The GitHub repository is public. Versioned releases and an article remain separate deliverables.
 7. **Cross-agent distribution** — Keep one canonical Agent Skills package under `skills/dev-artifact-cleanup`, provide skills.sh installation for Claude Code, Copilot, Cursor, and Codex, and validate discovery, installed resources, and relative links. CI repeats distribution checks with telemetry disabled. Runtime behavior in each host requires separate evaluation.
 8. **Execution evidence integration** — Version 0.3 links exact audit/approval/result/journal bytes with a portable read-only checker. Native disposable fixtures cover removed, retained, partial, and blocked receipts. This checks recorded consistency, not human authorization or authentic execution. Adoption by the weekly pinned automation, real-project trials, and unattended Xcode execution remain separate gates.
+9. **Corrective iteration** — Version 0.3.1 requires recognized cache-content profiles, unique attempt IDs and exact journal digests, and explicit unknown outcomes after ambiguous recovery. Keep unknown nonempty cache formats audit-only, preserve legacy evidence without backfilling, and use generated Clang index fixtures for the narrow positive profile. Portable per-run review/coverage and broader validated content profiles remain later work. Publication and active-installation adoption are separate decisions.
 
 ## Release gates
 

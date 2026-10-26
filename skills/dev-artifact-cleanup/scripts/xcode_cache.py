@@ -139,7 +139,44 @@ def inspect_context(repository, derived_data, workspace):
         }
 
 
-def inventory(descriptor):
+def content_signature(cache_name, relative, is_directory):
+    """Recognize one observed IndexStore layout; unknown layouts fail closed."""
+    parts = Path(relative).parts
+    if cache_name != "Index.noindex":
+        raise AdapterError("No validated content profile for this nonempty cache")
+    containers = {("DataStore",), ("DataStore", "v5"), ("DataStore", "v5", "records"), ("DataStore", "v5", "units")}
+    if is_directory:
+        if parts in containers or (len(parts) == 4 and parts[:3] == ("DataStore", "v5", "records") and re.fullmatch(r"[A-Z0-9]{2}", parts[3])):
+            return None
+    elif ((len(parts) == 5 and parts[:3] == ("DataStore", "v5", "records") and re.fullmatch(r"[A-Z0-9]{2}", parts[3]))
+          or (len(parts) == 4 and parts[:3] == ("DataStore", "v5", "units"))):
+        if re.fullmatch(r"[^/]+-[A-Z0-9]{8,32}", parts[-1]):
+            return b"IDXR" if parts[2] == "records" else b"IDXU"
+    raise AdapterError("Unrecognized generated-content layout: " + relative)
+
+
+def check_content(descriptor, name, entry, signature):
+    """Bounded header recognition, not a full IndexStore parser or origin proof."""
+    child = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=descriptor)
+    try:
+        current = os.fstat(child)
+        if not stat.S_ISREG(current.st_mode) or identity(current) != identity(entry):
+            raise AdapterError("Cache entry changed before content inspection")
+        header = os.read(child, 12)
+        words = int.from_bytes(header[8:12], "little")
+        if (len(header) != 12 or header[:8] != signature + b"\x01\x08\x00\x00"
+                or current.st_size < 16 or current.st_size % 4 or not 0 < words <= (current.st_size - 12) // 4):
+            raise AdapterError("Unrecognized or truncated generated-content signature: " + name)
+        after = os.fstat(child)
+        def metadata(info):
+            return (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+        if metadata(current) != metadata(entry) or metadata(after) != metadata(current):
+            raise AdapterError("Cache content metadata changed while inspecting")
+    finally:
+        os.close(child)
+
+
+def inventory(descriptor, cache_name="Index.noindex"):
     """Capture an inode-bound tree, rejecting links, user-looking content and mounts."""
     records, allocated = [], 0
     device = os.fstat(descriptor).st_dev
@@ -158,6 +195,7 @@ def inventory(descriptor):
                 raise AdapterError(f"Protected or manually authored-looking content: {relative}")
             if entry.st_dev != device or entry.st_uid != os.getuid() or entry.st_mode & 0o022 or stat.S_ISLNK(entry.st_mode):
                 raise AdapterError(f"Link, ownership or volume boundary: {relative}")
+            signature = content_signature(cache_name, relative, stat.S_ISDIR(entry.st_mode))
             metadata = [entry.st_dev, entry.st_ino, entry.st_mode, entry.st_uid, entry.st_size, entry.st_mtime_ns, entry.st_ctime_ns]
             records.append([relative, metadata])
             allocated += entry.st_blocks * 512
@@ -170,6 +208,7 @@ def inventory(descriptor):
                 finally:
                     os.close(child)
             elif stat.S_ISREG(entry.st_mode) and entry.st_nlink == 1:
+                check_content(fd, name, entry, signature)
                 node["children"][name] = {"identity": identity(entry), "metadata": metadata}
             else:
                 raise AdapterError(f"Hard link or special file: {relative}")
@@ -194,7 +233,7 @@ def inspect_cache(repository, derived_data, workspace, name):
         ignored = git(repository, "check-ignore", "--no-index", "-q", "--", relative)
         if tracked.returncode or tracked.stdout or ignored.returncode != 0:
             raise AdapterError("Cache must be ignored by the repository and contain no tracked files")
-        tree, digest, size, count = inventory(descriptor)
+        tree, digest, size, count = inventory(descriptor, name)
         paths = [relative]
 
         def collect(node, prefix):
@@ -212,7 +251,7 @@ def inspect_cache(repository, derived_data, workspace, name):
             "name": ADAPTER, "repositoryPath": str(repository), "derivedDataPath": str(derived_data),
             "workspacePath": str(workspace), "cacheName": name,
             "cacheIdentity": identity(os.fstat(descriptor)), "treeFingerprint": digest,
-            "entryCount": count, **binding,
+            "entryCount": count, "contentProfile": "empty-cache-v1" if count == 0 else "indexstore-v5-signature-v1", **binding,
         }, size, tree
 
 
@@ -393,7 +432,7 @@ def approved_candidate(manifest, manifest_digest, approval, candidate_id):
     if any(not isinstance(expected.get(key), str) or not expected[key] for key in ("repositoryPath", "derivedDataPath", "workspacePath", "cacheName")):
         raise AdapterError("Adapter ownership paths must be nonempty strings")
     if set(expected) != {"name", "repositoryPath", "derivedDataPath", "workspacePath", "cacheName", "cacheIdentity",
-                         "treeFingerprint", "entryCount", "derivedDataIdentity", "infoPlistSha256"}:
+                         "treeFingerprint", "entryCount", "derivedDataIdentity", "infoPlistSha256", "contentProfile"}:
         raise AdapterError("Recorded adapter metadata does not match the supported contract")
     repository, derived_data, workspace = map(Path, (expected["repositoryPath"], expected["derivedDataPath"], expected["workspacePath"]))
     target = derived_data / expected["cacheName"]
@@ -417,6 +456,9 @@ def approved_candidate(manifest, manifest_digest, approval, candidate_id):
             raise AdapterError("Recorded fingerprints must be SHA-256 hex strings")
     if type(expected.get("entryCount")) is not int or not 0 <= expected["entryCount"] <= MAX_ENTRIES:
         raise AdapterError("Recorded inventory count exceeds the bounded contract")
+    profile = "empty-cache-v1" if expected["entryCount"] == 0 else "indexstore-v5-signature-v1" if expected["cacheName"] == "Index.noindex" else None
+    if profile is None or expected.get("contentProfile") != profile:
+        raise AdapterError("Recorded cache lacks the supported generated-content profile")
     return candidate
 
 
@@ -434,11 +476,12 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
     if json.dumps(current, sort_keys=True) != json.dumps(expected, sort_keys=True) or size != candidate["sizeBytes"]:
         raise AdapterError("Cache identity, ownership or inventory changed since audit")
     output_fd = create_output(output_path)
-    result = {"status": "prepared", "operation": "remove-xcode-cache", "auditId": manifest["auditId"],
+    execution_id = uuid.uuid4().hex
+    result = {"status": "prepared", "operation": "remove-xcode-cache", "executionId": execution_id, "auditId": manifest["auditId"],
               "candidateId": candidate_id, "manifestSha256": manifest_digest,
               "approvalSha256": approval_digest, "authorizedAt": approval["authorizedAt"],
               "authorizationReference": approval["authorizationReference"], "path": str(target),
-              "journalPath": None, "reason": None}
+              "journalPath": None, "journalSha256": None, "reason": None}
     moved = False
     purge_started = False
     journal_fd = None
@@ -449,7 +492,7 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
             cache = stack.enter_context(directory(target))
             if identity(os.fstat(parent)) != expected["derivedDataIdentity"] or identity(os.fstat(cache)) != expected["cacheIdentity"]:
                 raise AdapterError("Cache or parent was replaced before staging")
-            stage_name = ".cleanup-staging-" + uuid.uuid4().hex
+            stage_name = ".cleanup-staging-" + execution_id
             os.mkdir(stage_name, 0o700, dir_fd=parent)
             stage = os.open(stage_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
             stack.callback(os.close, stage)
@@ -457,12 +500,13 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
             result["journalPath"] = str(derived_data / stage_name / "journal.json")
             # This recovery record is immutable after fsync: a later interrupted
             # outcome write must not destroy the metadata needed for restoration.
-            journal = {"adapter": current, "payloadIdentity": expected["cacheIdentity"],
+            journal = {"adapter": current, "payloadIdentity": expected["cacheIdentity"], "executionId": execution_id,
                        "auditId": manifest["auditId"], "candidateId": candidate_id,
                        "manifestSha256": manifest_digest, "approvalSha256": approval_digest,
                        "authorizedAt": approval["authorizedAt"], "authorizationReference": approval["authorizationReference"],
                        "createdAt": utc_now()}
             save_descriptor(journal_fd, journal)
+            result["journalSha256"] = hashlib.sha256(read_at(stage, "journal.json")).hexdigest()
             os.fsync(stage)
             os.fsync(parent)
             save_descriptor(output_fd, result)
@@ -474,7 +518,7 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
             if identity(payload) != expected["cacheIdentity"]:
                 raise AdapterError("Staged object identity differs; retained without purge")
             check_activity()
-            staged_tree, digest, _, _ = inventory(cache)
+            staged_tree, digest, _, _ = inventory(cache, expected["cacheName"])
             if digest != expected["treeFingerprint"]:
                 raise AdapterError("Staged cache changed; retained without purge")
             result["status"] = "purging"
@@ -505,7 +549,7 @@ def restore(journal_path, output_path):
     if sys.platform != "darwin":
         raise AdapterError("Exclusive restoration is macOS-only")
     journal_path = canonical(journal_path)
-    record, _ = read_json(journal_path)
+    record, journal_digest = read_json(journal_path)
     expected = record["adapter"]
     repository, derived_data, workspace = map(Path, (expected["repositoryPath"], expected["derivedDataPath"], expected["workspacePath"]))
     _, _, _, binding = inspect_context(repository, derived_data, workspace)
@@ -513,22 +557,45 @@ def restore(journal_path, output_path):
         raise AdapterError("DerivedData identity or workspace metadata changed since staging")
     if expected.get("name") != ADAPTER or journal_path.name != "journal.json" or journal_path.parent.parent != derived_data or not journal_path.parent.name.startswith(".cleanup-staging-") or expected["cacheName"] not in CACHES:
         raise AdapterError("Journal is not in its recorded staging directory")
+    source_execution = record.get("executionId")
+    if source_execution is not None and (not isinstance(source_execution, str) or not re.fullmatch(r"[0-9a-f]{32}", source_execution)
+                                         or journal_path.parent.name != ".cleanup-staging-" + source_execution):
+        raise AdapterError("Journal execution attempt does not match its staging directory")
     check_activity()
     output_fd = create_output(output_path)
+    result = {"status": "prepared", "operation": "restore-xcode-cache", "executionId": uuid.uuid4().hex,
+              "sourceExecutionId": record.get("executionId"), "journalSha256": journal_digest,
+              "path": str(derived_data / expected["cacheName"]), "journalPath": str(journal_path),
+              "mutationStarted": False, "phase": "prepared", "durability": "unconfirmed", "reason": None}
+    moved = False
     try:
+        save_descriptor(output_fd, result)
         with directory(derived_data) as parent, directory(journal_path.parent) as stage:
             if os.fstat(stage).st_uid != os.getuid() or stat.S_IMODE(os.fstat(stage).st_mode) != 0o700:
                 raise AdapterError("Staging directory ownership or permissions changed")
             if identity(os.stat("payload", dir_fd=stage, follow_symlinks=False)) != record["payloadIdentity"]:
                 raise AdapterError("Payload identity differs from the journal")
             native_rename(stage, "payload", parent, expected["cacheName"])
+            moved = True
+            result.update(mutationStarted=True, phase="renamed")
             os.fsync(stage)
             os.fsync(parent)
-        result = {"status": "restored", "path": str(derived_data / expected["cacheName"]), "journalPath": str(journal_path)}
+        result.update(status="restored", phase="completed", durability="confirmed")
         try:
             save_descriptor(output_fd, result)
         except OSError as report_error:
             result["reportError"] = str(report_error)
+        return result
+    except (OSError, AdapterError) as error:
+        result.update(status="unknown" if moved else "blocked", reason=str(error))
+        try:
+            save_descriptor(output_fd, result)
+        except OSError as report_error:
+            result["reportError"] = str(report_error)
+        if not moved:
+            # Preserve the API's pre-mutation error contract; the CLI reports
+            # blocked and the separately saved receipt records its phase.
+            raise
         return result
     finally:
         os.close(output_fd)

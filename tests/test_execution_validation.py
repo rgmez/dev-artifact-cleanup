@@ -35,7 +35,8 @@ class ValidationFixture(Fixture):
                   "authorizationReference": approval["authorizationReference"],
                   "path": candidate["path"], "status": status, "reason": reason,
                   "journalPath": origin if journal or status != "blocked" else None}
-        result_path.write_text(json.dumps(result))
+        result["executionId"] = "a" * 32
+        result["journalSha256"] = None
         journal_path = self.root / "archived-journal.json"
         if journal:
             journal = {"auditId": audit["auditId"], "candidateId": candidate["id"],
@@ -45,8 +46,10 @@ class ValidationFixture(Fixture):
                        "authorizationReference": approval["authorizationReference"],
                        "adapter": candidate["adapter"],
                        "payloadIdentity": candidate["adapter"]["cacheIdentity"],
-                       "createdAt": approval["authorizedAt"]}
+                       "createdAt": approval["authorizedAt"], "executionId": result["executionId"]}
             journal_path.write_text(json.dumps(journal))
+            result["journalSha256"] = hashlib.sha256(journal_path.read_bytes()).hexdigest()
+        result_path.write_text(json.dumps(result))
         return audit_path, approval_path, result_path, journal_path
 
     def _validate(self, status="removed", reason=None, journal=True):
@@ -69,6 +72,7 @@ class ValidationFixture(Fixture):
             self._change(path, "approvalSha256", approval_digest)
         self._change(journal, "adapter", data["candidates"][0]["adapter"])
         self._change(journal, "payloadIdentity", data["candidates"][0]["adapter"].get("cacheIdentity"))
+        self._change(result, "journalSha256", hashlib.sha256(journal.read_bytes()).hexdigest())
 
 
 class PortableValidationTests(ValidationFixture):
@@ -104,8 +108,7 @@ class PortableValidationTests(ValidationFixture):
         self.assertFalse(original.exists())
         self.assertNotEqual(original, paths[3])
         # Even the recorded cache/repository need not survive evidence archival.
-        (self.cache / "cache.pcm").unlink()
-        self.cache.rmdir()
+        self._remove_fixture_cache()
         self.assertTrue(validate_execution.validate_evidence(*paths)["valid"])
 
     def test_changed_inputs_and_bindings_are_invalid(self):
@@ -244,7 +247,7 @@ class NativeValidationTests(ValidationFixture):
     def test_native_partial_receipt_validates(self):
         paths = self._approval()
         def interrupted(descriptor, tree):
-            os.unlink("cache.pcm", dir_fd=descriptor)
+            os.unlink(self.cache_relative.as_posix(), dir_fd=descriptor)
             raise xcode_cache.AdapterError("Interrupted after one disposable file")
 
         with patch.object(xcode_cache, "purge_contents", side_effect=interrupted):
@@ -265,4 +268,4 @@ class NativeValidationTests(ValidationFixture):
         checked = validate_execution.validate_evidence(*paths, Path(result["journalPath"]))
         self.assertTrue(checked["valid"])
         self.assertFalse(checked["reportedSuccess"])
-        self.assertTrue((self.cache / "cache.pcm").exists())
+        self.assertTrue((self.cache_file).exists())

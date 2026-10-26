@@ -19,10 +19,13 @@ Inputs must be explicit physical absolute paths to bounded regular files, with n
 
 - Strict JSON objects, unique keys, finite numbers, the selected adapter metadata contract, and the recorded approval's exact audit-byte digest and candidate ID.
 - Result bindings to audit ID, candidate ID, exact audit and approval byte digests, authorization timestamp/reference, operation, and target path.
+- A unique 32-hex `executionId` matching the journal and original staging-directory name, plus the result's SHA-256 of the exact supplied journal bytes. Journals from separate retries are not interchangeable, even under the same audit and approval.
 - The original journal pointer's lexical relationship to the audited dedicated DerivedData staging path. The pointer is never opened automatically.
 - The explicitly supplied journal's matching identifiers, digests, adapter metadata, payload identity, and a timezone-aware creation time following approval and not in the future.
 
 Only the selected removal evidence is checked, not every field of an audit/report schema. Whitespace changes alter file digests. Earlier or incomplete records may not contain enough evidence; do not invent missing bindings to make them pass.
+
+Version 0.3.1 requires the current `contentProfile` audit metadata and attempt-specific result/journal bindings. Older 0.3.0 receipts lack those guarantees and are invalid/incomplete under this checker, even when an older checker accepted them. Preserve those originals and their previous validation rather than rewriting or backfilling them. This change does not authorize another removal; a new action needs a new audit and approval. Legacy recovery remains a separate manually reviewed workflow.
 
 ## Interpret results
 

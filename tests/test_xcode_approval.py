@@ -70,7 +70,7 @@ class NativeApprovalTests(Fixture):
         approval_path.write_text(json.dumps(approval))
         with self.assertRaises(xcode_cache.AdapterError):
             xcode_cache.execute(manifest_path, approval_path, requested, output)
-        self.assertTrue((self.cache / "cache.pcm").exists())
+        self.assertTrue((self.cache_file).exists())
         self.assertFalse(output.exists())
         self.assertEqual(list(self.derived_data.glob(".cleanup-staging-*")), [])
 
@@ -115,7 +115,7 @@ class NativeApprovalTests(Fixture):
         )
         with self.assertRaises(xcode_cache.AdapterError):
             self._execute((manifest_path, approval_path, output))
-        self.assertTrue((self.cache / "cache.pcm").exists())
+        self.assertTrue((self.cache_file).exists())
         self.assertFalse(output.exists())
         self.assertEqual(list(self.derived_data.glob(".cleanup-staging-*")), [])
 
@@ -133,7 +133,7 @@ class NativeApprovalTests(Fixture):
         approval_path.write_text(json.dumps(approval))
         with self.assertRaises(xcode_cache.AdapterError):
             self._execute((manifest_path, approval_path, output))
-        self.assertTrue((self.cache / "cache.pcm").exists())
+        self.assertTrue((self.cache_file).exists())
         self.assertFalse(output.exists())
         self.assertEqual(list(self.derived_data.glob(".cleanup-staging-*")), [])
 

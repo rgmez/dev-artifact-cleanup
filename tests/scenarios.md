@@ -55,3 +55,15 @@ Given a host that cannot inspect processes, the Xcode audit must report affected
 ## 13. Ambiguous approval safety stop
 
 Given JSON records with duplicate keys, non-finite numbers, or a non-object root, reject them before staging. A hash matching ambiguous bytes is not enough. Candidate class, ownership, Git state, ID syntax, approved-root array, and measured size must agree with the dedicated-cache execution contract. A successful result and its immutable journal must bind the exact approval bytes, timestamp, and reference.
+
+## 14. Unknown content safety stop
+
+Given an otherwise eligible dedicated cache with a manually authored README, RTF document, unknown file, or unknown layout, the entire candidate requires review and its bytes remain unchanged. A known name or ignored state is not enough. The narrow positive IndexStore profile is also exercised with real Clang output; other nonempty cache formats remain non-executable until separately validated.
+
+## 15. Execution-specific journal evidence
+
+Given two attempts under the same audit and approval, their execution IDs and journals are distinct. Reviewing the second result with the first journal fails, even if all audit/approval identifiers and payload identities match. Journal whitespace changes also fail its recorded digest. Do not backfill missing fields in legacy evidence.
+
+## 16. Recovery after an ambiguous durability failure
+
+Given a retained payload, recovery persists a prepared receipt before its native rename. If directory fsync fails after that rename, report an unknown outcome, the renamed phase and unconfirmed durability; do not imply that no movement happened or retry automatically. If the final result write fails, capture the truthful stdout receipt and reportError alongside the stale saved file. Initial persistence failure must leave the payload staged.

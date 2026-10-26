@@ -77,6 +77,9 @@ def validate_evidence(audit_path, approval_path, result_path, journal_path=None)
         return finish()
 
     expected = candidate["adapter"]
+    execution_id = result.get("executionId")
+    if not isinstance(execution_id, str) or not re.fullmatch(r"[0-9a-f]{32}", execution_id):
+        flag("result.execution", "Result must identify its unique execution attempt")
     bindings = {"operation": "remove-xcode-cache", "auditId": audit["auditId"], "candidateId": candidate["id"],
                 "manifestSha256": digests["audit"], "approvalSha256": digests["approval"],
                 "authorizedAt": approval["authorizedAt"], "authorizationReference": approval["authorizationReference"],
@@ -108,17 +111,22 @@ def validate_evidence(audit_path, approval_path, result_path, journal_path=None)
             path = Path(origin)
             if (not path.is_absolute() or str(path) != origin or ".." in path.parts
                     or path.name != "journal.json" or path.parent.parent != Path(expected["derivedDataPath"])
-                    or not re.fullmatch(r"\.cleanup-staging-[0-9a-f]{32}", path.parent.name)):
+                    or path.parent.name != ".cleanup-staging-" + str(execution_id)):
                 flag("journal.origin", "Journal origin is not a dedicated staging path for this audit")
         if journal_path is None:
             flag("journal.missing", "Provide the original journal bytes or their preserved archive copy")
+        if (not isinstance(result.get("journalSha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", result["journalSha256"])
+                or result["journalSha256"] != digests.get("journal")):
+            flag("journal.digest", "Result must bind the exact immutable journal bytes")
     elif journal_path is not None:
         flag("journal.unexpected", "A journal was supplied without a recorded origin")
+    elif "journalSha256" not in result or result["journalSha256"] is not None:
+        flag("journal.digest", "A result without a journal must explicitly record a null journal digest")
 
     journal = documents.get("journal")
     if journal is not None:
         journal_bindings = {key: bindings[key] for key in ("auditId", "candidateId", "manifestSha256", "approvalSha256", "authorizedAt", "authorizationReference")}
-        journal_bindings.update(adapter=expected, payloadIdentity=expected.get("cacheIdentity"))
+        journal_bindings.update(adapter=expected, payloadIdentity=expected.get("cacheIdentity"), executionId=execution_id)
         for key, value in journal_bindings.items():
             if not same(journal.get(key), value):
                 flag("journal.binding", "Journal does not bind the recorded " + key)

@@ -87,7 +87,7 @@
     },
     "xcodeAdapter": {
       "type": "object",
-      "required": ["name", "repositoryPath", "derivedDataPath", "workspacePath", "cacheName", "cacheIdentity", "derivedDataIdentity", "treeFingerprint", "infoPlistSha256", "entryCount"],
+      "required": ["name", "repositoryPath", "derivedDataPath", "workspacePath", "cacheName", "cacheIdentity", "derivedDataIdentity", "treeFingerprint", "infoPlistSha256", "entryCount", "contentProfile"],
       "properties": {
         "name": { "const": "xcode-dedicated-cache-v1" },
         "repositoryPath": { "type": "string", "pattern": "^/" },
@@ -98,7 +98,8 @@
         "derivedDataIdentity": { "$ref": "#/$defs/identity" },
         "treeFingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "infoPlistSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-        "entryCount": { "type": "integer", "minimum": 0, "maximum": 100000 }
+        "entryCount": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "contentProfile": { "enum": ["empty-cache-v1", "indexstore-v5-signature-v1"] }
       },
       "additionalProperties": false
     }

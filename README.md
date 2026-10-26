@@ -67,6 +67,8 @@ Version 0.2.1 rejects ambiguous JSON approvals and inconsistent candidate metada
 
 Version 0.3 adds a read-only [execution evidence checker](skills/dev-artifact-cleanup/references/execution-evidence.md) that links the exact audit, approval, removal result, and explicit journal copy. It distinguishes consistent retained/partial evidence from recorded success, never follows the recorded journal pointer, and never grants permission or authenticates execution. Existing pinned automations do not adopt this version automatically.
 
+Version 0.3.1 tightens eligibility to recognized content profiles: currently empty allowlisted caches or a narrow nonempty IndexStore v5 layout. Unknown content, including the other three nonempty cache kinds, requires review. Results bind a unique execution attempt and the exact journal digest; older records without these fields cannot pass the new checker and must not be backfilled. Recovery reports a post-rename durability failure as an unknown outcome that needs reconciliation. These are safety corrections, not expanded cleanup permissions.
+
 ## skills.sh discovery
 
 This public GitHub repository is installable by the skills CLI. [skills.sh indexes skills through CLI installation telemetry](https://skills.sh/docs/faq); there is no separate package upload or approval file required. A successful install does not guarantee immediate search or leaderboard visibility.

@@ -20,6 +20,8 @@ Confirm no build or test is active first. Removing these directories can require
 
 The [bundled adapter](xcode-cache-adapter.md) executes only `Index.noindex`, `CompilationCache.noindex`, `ModuleCache.noindex`, or `SDKStatCaches.noindex` directly inside dedicated DerivedData in the primary checkout. It requires matching `WorkspacePath` metadata, physical paths, ignored/untracked contents, an unchanged inventory, no active Xcode processes, and a separate exact approval. Execution and restoration require macOS; metadata-only audit can run on Linux against accessible fixtures or checkout data.
 
+The closed allowlist is only the first gate. Nonempty caches also need the adapter's current content profile, currently a narrow IndexStore v5 layout with recognized binary signatures. Unknown entries and the other nonempty cache formats require review, without an execution override. Filename extensions alone are not a generated-content classifier.
+
 It never removes the DerivedData root, `Build`, `SourcePackages`, logs, test evidence, archives, dSYMs, simulators, or shared caches. Evidence inside an allowlisted cache blocks that candidate. Names and age alone are never enough.
 
 ## Require review
