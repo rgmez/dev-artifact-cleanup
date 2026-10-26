@@ -4,7 +4,7 @@ description: Audit local development artifacts and plan safe cleanup for Git rep
 license: MIT
 compatibility: Requires local filesystem inspection and Git in a macOS or Linux workspace. The optional Xcode cache adapter requires Python 3.9+; execution and restoration require macOS with exclusive rename support. Execution requires safe command arguments and process inspection.
 metadata:
-  version: "0.2.1"
+  version: "0.3.0"
   supported-runtimes: "claude-code, github-copilot, cursor, codex, skills.sh"
 ---
 
@@ -42,6 +42,7 @@ Read [execution rules](references/execution.md) before performing an execution r
 - Treat local-branch deletion as a separate, explicitly authorized action. Never delete remote branches without explicit authorization.
 - Prefer a project-specific build-output directory only when its configuration proves it is regenerated. Do not remove dependency directories, environments, secrets, user documents, screenshots, archives, or evidence by default.
 - For Xcode execution, read the [adapter contract](references/xcode-cache-adapter.md) and run the bundled script without bypasses. It supports only four direct cache children of dedicated DerivedData inside a primary Git checkout. Never substitute a generic recursive deletion command.
+- When reviewing an Xcode removal outcome, use the read-only [execution evidence checker](references/execution-evidence.md). Preserve exact audit, approval, result, and journal bytes; consistency is not authorization or proof of execution.
 - Measure space again and report removed, retained, skipped, and failed candidates separately.
 
 ## Stop conditions
@@ -62,4 +63,4 @@ Stop and report instead of deleting when any of these is true:
 
 ## Version
 
-0.2.1. Git worktree execution, a bounded macOS dedicated-Xcode-cache adapter with strict approval parsing and approval-bound receipts, and Xcode/Swift artifact audits; installation through skills.sh.
+0.3.0. Git worktree execution, a bounded macOS dedicated-Xcode-cache adapter, a read-only execution evidence checker, and Xcode/Swift artifact audits; installation through skills.sh. Pinned installations require separate adoption.

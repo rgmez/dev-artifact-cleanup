@@ -37,7 +37,7 @@ For a manual project install, copy that entire directory into a location recogni
 
 ## Scope and requirements
 
-Version 0.2 focuses on Git repositories and Xcode/Swift development environments. Web and Android build artifacts are deferred until they have their own evidence rules and validation scenarios.
+Version 0.3 focuses on Git repositories and Xcode/Swift development environments. Web and Android build artifacts are deferred until they have their own evidence rules and validation scenarios.
 
 Filesystem and Git inspection require a macOS or Linux workspace. The optional Xcode adapter needs Python 3.9+ and Git; metadata-only audit is portable, but execution and recovery require macOS. Other Xcode diagnostics need the relevant macOS tools. A cloud agent cannot infer access to your development machine. Native Windows path manifests are outside the scope. See [agent capabilities](skills/dev-artifact-cleanup/references/agent-capabilities.md).
 
@@ -64,6 +64,8 @@ The instructions guide the agent's decisions; a manifest or metadata field does 
 For Xcode caches, follow the [adapter contract and CLI examples](skills/dev-artifact-cleanup/references/xcode-cache-adapter.md). It requires matching workspace metadata, ignored/untracked contents, unchanged identity/inventory, no Xcode activity, and a separate approval bound to the exact audit-file SHA-256 and candidate IDs. It stages without overwriting and keeps a recovery journal; restoration cannot undo an already purged file. It assumes a quiescent trusted checkout, not adversarial concurrent writers.
 
 Version 0.2.1 rejects ambiguous JSON approvals and inconsistent candidate metadata before staging. Execution results and new journals also bind the exact approval-file digest and authorization reference. These records do not replace human authorization or host permissions.
+
+Version 0.3 adds a read-only [execution evidence checker](skills/dev-artifact-cleanup/references/execution-evidence.md) that links the exact audit, approval, removal result, and explicit journal copy. It distinguishes consistent retained/partial evidence from recorded success, never follows the recorded journal pointer, and never grants permission or authenticates execution. Existing pinned automations do not adopt this version automatically.
 
 ## skills.sh discovery
 

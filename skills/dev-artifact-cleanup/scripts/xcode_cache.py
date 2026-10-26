@@ -301,10 +301,7 @@ def finite_number(value):
     return number
 
 
-def read_json(path):
-    path = Path(path)
-    with directory(path.parent) as parent:
-        contents = read_at(parent, path.name)
+def parse_json_object(contents):
     try:
         record = json.loads(contents, object_pairs_hook=unique_object,
                             parse_constant=reject_constant, parse_float=finite_number)
@@ -312,7 +309,14 @@ def read_json(path):
         raise AdapterError("Metadata is not a valid JSON object") from error
     if not isinstance(record, dict):
         raise AdapterError("Metadata must be a JSON object")
-    return record, hashlib.sha256(contents).hexdigest()
+    return record
+
+
+def read_json(path):
+    path = Path(path)
+    with directory(path.parent) as parent:
+        contents = read_at(parent, path.name)
+    return parse_json_object(contents), hashlib.sha256(contents).hexdigest()
 
 
 def purge_contents(descriptor, tree):
@@ -340,11 +344,8 @@ def purge_contents(descriptor, tree):
             os.unlink(name, dir_fd=descriptor)
 
 
-def execute(manifest_path, approval_path, candidate_id, output_path):
-    if sys.platform != "darwin":
-        raise AdapterError("Xcode cache execution is macOS-only")
-    manifest, manifest_digest = read_json(manifest_path)
-    approval, approval_digest = read_json(approval_path)
+def approved_candidate(manifest, manifest_digest, approval, candidate_id):
+    """Check recorded consent and candidate bindings, not human identity or live safety."""
     if (type(manifest.get("schemaVersion")) is not int or manifest["schemaVersion"] != 1
             or manifest.get("mode") != "audit" or manifest.get("approvedCandidateIds") != []
             or not isinstance(manifest.get("auditId"), str) or not manifest["auditId"].strip()):
@@ -369,6 +370,8 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
         raise AdapterError("Authorized IDs must be a unique closed subset of this audit")
     if candidate_id not in authorized or not isinstance(approval.get("authorizationReference"), str) or not approval["authorizationReference"].strip():
         raise AdapterError("Candidate has no recorded explicit authorization")
+    if not all(isinstance(record.get(key), str) for record, key in ((approval, "authorizedAt"), (manifest, "createdAt"))):
+        raise AdapterError("Audit and authorization timestamps must be strings")
     try:
         authorized_at = datetime.fromisoformat(approval["authorizedAt"].replace("Z", "+00:00"))
         created_at = datetime.fromisoformat(manifest["createdAt"].replace("Z", "+00:00"))
@@ -389,10 +392,43 @@ def execute(manifest_path, approval_path, candidate_id, output_path):
         raise AdapterError("Candidate is not eligible for this adapter")
     if any(not isinstance(expected.get(key), str) or not expected[key] for key in ("repositoryPath", "derivedDataPath", "workspacePath", "cacheName")):
         raise AdapterError("Adapter ownership paths must be nonempty strings")
+    if set(expected) != {"name", "repositoryPath", "derivedDataPath", "workspacePath", "cacheName", "cacheIdentity",
+                         "treeFingerprint", "entryCount", "derivedDataIdentity", "infoPlistSha256"}:
+        raise AdapterError("Recorded adapter metadata does not match the supported contract")
     repository, derived_data, workspace = map(Path, (expected["repositoryPath"], expected["derivedDataPath"], expected["workspacePath"]))
     target = derived_data / expected["cacheName"]
     if candidate.get("path") != str(target) or candidate.get("resolvedPath") != str(target) or candidate.get("approvedRoot") != str(repository) or str(repository) not in manifest.get("approvedRoots", []):
         raise AdapterError("Candidate path is not the approved dedicated cache")
+    if expected["cacheName"] not in CACHES:
+        raise AdapterError("Cache name is outside the closed allowlist")
+    for key, path in (("repositoryPath", repository), ("derivedDataPath", derived_data), ("workspacePath", workspace)):
+        if not path.is_absolute() or ".." in path.parts or str(path).startswith("//") or str(path) != expected[key]:
+            raise AdapterError("Recorded ownership paths must be absolute and normalized")
+    if repository not in derived_data.parents or repository not in workspace.parents:
+        raise AdapterError("Recorded DerivedData and workspace must be inside the repository")
+    if ".git" in derived_data.relative_to(repository).parts or workspace.suffix not in {".xcodeproj", ".xcworkspace"}:
+        raise AdapterError("Unsupported recorded workspace or Git metadata path")
+    for key in ("cacheIdentity", "derivedDataIdentity"):
+        value = expected.get(key)
+        if not isinstance(value, list) or len(value) != 2 or any(type(part) is not int or part < 0 for part in value):
+            raise AdapterError("Recorded directory identities must be two nonnegative integers")
+    for key in ("treeFingerprint", "infoPlistSha256"):
+        if not isinstance(expected.get(key), str) or not re.fullmatch(r"[0-9a-f]{64}", expected[key]):
+            raise AdapterError("Recorded fingerprints must be SHA-256 hex strings")
+    if type(expected.get("entryCount")) is not int or not 0 <= expected["entryCount"] <= MAX_ENTRIES:
+        raise AdapterError("Recorded inventory count exceeds the bounded contract")
+    return candidate
+
+
+def execute(manifest_path, approval_path, candidate_id, output_path):
+    if sys.platform != "darwin":
+        raise AdapterError("Xcode cache execution is macOS-only")
+    manifest, manifest_digest = read_json(manifest_path)
+    approval, approval_digest = read_json(approval_path)
+    candidate = approved_candidate(manifest, manifest_digest, approval, candidate_id)
+    expected = candidate["adapter"]
+    repository, derived_data, workspace = map(Path, (expected["repositoryPath"], expected["derivedDataPath"], expected["workspacePath"]))
+    target = derived_data / expected["cacheName"]
     check_activity()
     current, size, tree = inspect_cache(repository, derived_data, workspace, expected["cacheName"])
     if json.dumps(current, sort_keys=True) != json.dumps(expected, sort_keys=True) or size != candidate["sizeBytes"]:

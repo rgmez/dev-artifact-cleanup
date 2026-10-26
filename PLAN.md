@@ -30,7 +30,8 @@ dev-artifact-cleanup/
 │   └── dev-artifact-cleanup/
 │       ├── SKILL.md
 │       ├── scripts/
-│       │   └── xcode_cache.py
+│       │   ├── xcode_cache.py
+│       │   └── validate_execution.py
 │       └── references/
 │           ├── git-worktrees.md
 │           └── xcode-artifacts.md
@@ -49,6 +50,7 @@ Add scripts only if they remove repeated, error-prone logic that cannot be expre
 5. **Public-readiness** — Add license, concise repository documentation, validation evidence, and a no-secrets review. **Public repository available:** the package remains a development version; installation validation does not certify execution behavior in each host.
 6. **Publication and article** — The GitHub repository is public. Versioned releases and an article remain separate deliverables.
 7. **Cross-agent distribution** — Keep one canonical Agent Skills package under `skills/dev-artifact-cleanup`, provide skills.sh installation for Claude Code, Copilot, Cursor, and Codex, and validate discovery, installed resources, and relative links. CI repeats distribution checks with telemetry disabled. Runtime behavior in each host requires separate evaluation.
+8. **Execution evidence integration** — Version 0.3 links exact audit/approval/result/journal bytes with a portable read-only checker. Native disposable fixtures cover removed, retained, partial, and blocked receipts. This checks recorded consistency, not human authorization or authentic execution. Adoption by the weekly pinned automation, real-project trials, and unattended Xcode execution remain separate gates.
 
 ## Release gates
 

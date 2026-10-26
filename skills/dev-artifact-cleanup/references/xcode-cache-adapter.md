@@ -69,6 +69,8 @@ The CLI exits nonzero for blocked, retained, partial, or `reportError` outcomes.
 
 Execution results and new recovery journals record `approvalSha256`, `authorizedAt`, and `authorizationReference` alongside the audit-file digest and candidate ID. Preserve the exact approval bytes and compare these fields when reviewing the outcome. The digest binds the recorded approval, not the identity or authority of whoever wrote it. Earlier journals may lack these new fields; do not invent missing authorization evidence when recovering them.
 
+Use the read-only [execution evidence checker](execution-evidence.md) to compare the preserved documents. It accepts an explicit archived journal without requiring the original project to exist. A consistent retained/partial result is not successful cleanup, and validation never grants permission or authenticates execution.
+
 ## Restore retained payload
 
 After explicitly choosing recovery and checking the result/journal:

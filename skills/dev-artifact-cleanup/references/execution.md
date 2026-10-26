@@ -38,6 +38,8 @@ The [dedicated Xcode cache adapter](xcode-cache-adapter.md) uses descriptor-rela
 
 Report every other class as audit-only. New adapters require separate review and tests; never add execution through interpolated shell text.
 
+For Xcode outcome review, preserve the exact audit, approval, result, and journal bytes and run the [execution evidence checker](execution-evidence.md). Keep the trusted runner's stdout/stderr and exit status separately. Its consistency result does not authenticate execution or replace human authorization and host permissions.
+
 ## Outcome
 
 Measure the same data volume before and after execution. Mark every approved candidate as removed, skipped, retained, partially removed, or failed, with reasons. A partial purge is not full retention; restoration can only move back what remains. Treat observed free-space variation as a measurement, not a guaranteed reclaim amount.
